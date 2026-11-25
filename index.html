@@ -130,8 +130,8 @@
               <i data-lucide="store" class="w-5 h-5"></i>
             </div>
             <div>
-              <h3 class="font-semibold text-white text-sm sm:text-base">1. Datos del Local y Visita</h3>
-              <p class="text-xs text-slate-400">Ingreso manual con memoria automática de locales</p>
+              <h3 class="font-semibold text-white text-sm sm:text-base">1. Datos del Local y Orden de Trabajo (OT)</h3>
+              <p class="text-xs text-slate-400">Correlativo automático editable</p>
             </div>
           </div>
 
@@ -147,11 +147,16 @@
             </div>
 
             <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Número de OT *</label>
+              <input type="text" id="visit-ot" required class="w-full bg-obsidian-950 border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-cyan-300 font-semibold focus:outline-none focus:border-cyan-400" />
+            </div>
+
+            <div>
               <label class="block text-xs font-medium text-slate-300 mb-1.5">Fecha de Visita *</label>
               <input type="date" id="visit-date" required class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500" />
             </div>
 
-            <div>
+            <div class="sm:col-span-2">
               <label class="block text-xs font-medium text-slate-300 mb-1.5">Tipo de Atención</label>
               <select id="visit-type" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500">
                 <option value="Mantención Preventiva">Mantención Preventiva</option>
@@ -161,7 +166,7 @@
               </select>
             </div>
 
-            <div class="sm:col-span-4">
+            <div class="sm:col-span-2">
               <label class="block text-xs font-medium text-slate-300 mb-1.5">Estado General al Retirarse</label>
               <select id="visit-status" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500">
                 <option value="Local 100% Operativo">Local 100% Operativo</option>
@@ -190,7 +195,7 @@
           <div id="lighting-catalog-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
 
           <div class="pt-1">
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación de Iluminación Interior</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación / Detalle de Iluminación Interior</label>
             <input type="text" id="lighting-notes" placeholder="Ej: Cambio de paneles en pasillo y fuente cenefa..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
           </div>
         </div>
@@ -245,7 +250,7 @@
 
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1.5">Detalle de Caluga Exterior</label>
-            <input type="text" id="caluga-notes" placeholder="Ej: Cambio transformador 12V y cinta LED..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+            <input type="text" id="caluga-notes" placeholder="Ej: Cambio transformador 12V y cinta LED en caluga..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
           </div>
         </div>
 
@@ -272,7 +277,36 @@
           </div>
         </div>
 
-        <!-- 5. Equipos de Frío / Máquinas Hussmann y/o Ventus -->
+        <!-- 5. Gasfitería Menor -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="p-2 rounded-lg bg-teal-500/10 text-teal-400">
+                <i data-lucide="droplets" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-sm sm:text-base">5. Gasfitería Menor</h3>
+                <p class="text-xs text-slate-400">Sifones, llaves angulares/paso, flexibles, uniones y detalles</p>
+              </div>
+            </div>
+            <button type="button" onclick="addPlumbingItem()" class="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Agregar Gasfitería
+            </button>
+          </div>
+
+          <div id="plumbing-list" class="space-y-3"></div>
+          <div id="plumbing-empty" class="text-center py-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+            Sin trabajos de gasfitería registrados en esta visita.
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación General de Gasfitería</label>
+            <input type="text" id="plumbing-notes" placeholder="Ej: Cambio de sifón bajo lavamanos y llave de paso sin filtraciones..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-500" />
+          </div>
+        </div>
+
+        <!-- 6. Equipos de Frío / Máquinas Hussmann y/o Ventus -->
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div class="flex items-center gap-2.5">
@@ -280,7 +314,7 @@
                 <i data-lucide="snowflake" class="w-5 h-5"></i>
               </div>
               <div>
-                <h3 class="font-semibold text-white text-sm sm:text-base">5. Limpieza Máquinas Hussmann y/o Ventus</h3>
+                <h3 class="font-semibold text-white text-sm sm:text-base">6. Limpieza Máquinas Hussmann y/o Ventus</h3>
                 <p class="text-xs text-slate-400">Selecciona marca Hussmann, Ventus o ambas y registra las tareas</p>
               </div>
             </div>
@@ -296,14 +330,14 @@
           </div>
         </div>
 
-        <!-- 6. Extintores -->
+        <!-- 7. Extintores -->
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
             <div class="p-2 rounded-lg bg-rose-500/10 text-rose-400">
               <i data-lucide="flame-kindling" class="w-5 h-5"></i>
             </div>
             <div>
-              <h3 class="font-semibold text-white text-sm sm:text-base">6. Revisión de Extintores</h3>
+              <h3 class="font-semibold text-white text-sm sm:text-base">7. Revisión de Extintores</h3>
               <p class="text-xs text-slate-400">Vigencia, recambio en visita o alerta</p>
             </div>
           </div>
@@ -325,13 +359,13 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación</label>
-              <input type="text" id="ext-notes" placeholder="Ej: Se cambió extintor PQS 6kg..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación / Detalle</label>
+              <input type="text" id="ext-notes" placeholder="Ej: Se cambió extintor PQS 6kg en bodega..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
             </div>
           </div>
         </div>
 
-        <!-- 7. Detalles Pendientes -->
+        <!-- 8. Detalles Pendientes -->
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div class="flex items-center gap-2.5">
@@ -339,7 +373,7 @@
                 <i data-lucide="alert-triangle" class="w-5 h-5"></i>
               </div>
               <div>
-                <h3 class="font-semibold text-white text-sm sm:text-base">7. Detalles Pendientes / Lo que Falta</h3>
+                <h3 class="font-semibold text-white text-sm sm:text-base">8. Detalles Pendientes / Lo que Falta</h3>
                 <p class="text-xs text-slate-400">Trabajos faltantes o repuestos para próxima visita</p>
               </div>
             </div>
@@ -355,7 +389,7 @@
           </div>
         </div>
 
-        <!-- 8. Evidencia Fotográfica -->
+        <!-- 9. Evidencia Fotográfica -->
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div class="flex items-center gap-2.5">
@@ -363,7 +397,7 @@
                 <i data-lucide="camera" class="w-5 h-5"></i>
               </div>
               <div>
-                <h3 class="font-semibold text-white text-sm sm:text-base">8. Evidencia Fotográfica</h3>
+                <h3 class="font-semibold text-white text-sm sm:text-base">9. Evidencia Fotográfica</h3>
                 <p class="text-xs text-slate-400">Antes / Después / Hallazgo</p>
               </div>
             </div>
@@ -380,14 +414,14 @@
           </div>
         </div>
 
-        <!-- 9. Recepción Conforme en Local -->
+        <!-- 10. Recepción Conforme en Local -->
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
             <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
               <i data-lucide="user-check" class="w-5 h-5"></i>
             </div>
             <div>
-              <h3 class="font-semibold text-white text-sm sm:text-base">9. Recepción del Trabajo en Local</h3>
+              <h3 class="font-semibold text-white text-sm sm:text-base">10. Recepción del Trabajo en Local</h3>
               <p class="text-xs text-slate-400">Quién recibe y firma de conformidad</p>
             </div>
           </div>
@@ -434,7 +468,7 @@
 
         <div class="bg-obsidian-900 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="text-xs text-slate-400">
-            Al guardar, el local queda respaldado, se actualiza tu <strong class="text-white">Inventario</strong> y se abre el <strong class="text-white">Informe</strong>.
+            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se actualiza tu <strong class="text-white">Inventario</strong> y se abre el <strong class="text-white">Informe</strong>.
           </div>
           <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg">
             <i data-lucide="save" class="w-4 h-4"></i>
@@ -492,7 +526,7 @@
         <div class="flex flex-col md:flex-row gap-3">
           <div class="relative flex-1">
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-            <input type="text" id="history-search" oninput="renderHistory()" placeholder="Buscar por local, fecha, material, hussmann, ventus o asesor..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+            <input type="text" id="history-search" oninput="renderHistory()" placeholder="Buscar por OT, local, sifón, llave, extintor, hussmann o ventus..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
           </div>
           <select id="history-store-filter" onchange="renderHistory()" class="bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
             <option value="ALL">Todos los locales</option>
@@ -529,7 +563,6 @@
         </div>
       </div>
 
-      <!-- Tarjetas de Resumen Rápido -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4">
           <div class="text-xs text-slate-400">Insumo Más Utilizado</div>
@@ -548,7 +581,6 @@
         </div>
       </div>
 
-      <!-- Gráficas Profesionales -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div class="lg:col-span-7 bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
           <div class="flex items-center justify-between">
@@ -571,7 +603,6 @@
         </div>
       </div>
 
-      <!-- Tabla / Ranking Visual con Barras -->
       <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
         <h3 class="text-sm font-semibold text-white">Detalle de Uso por Material</h3>
         <div id="inv-ranking-bars" class="space-y-3"></div>
@@ -619,7 +650,7 @@
             </div>
           </div>
 
-          <textarea id="whatsapp-preview-box" rows="8" oninput="customWhatsAppText = this.value" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-emerald-500"></textarea>
+          <textarea id="whatsapp-preview-box" rows="9" oninput="customWhatsAppText = this.value" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-emerald-500"></textarea>
         </div>
       </div>
 
@@ -710,11 +741,21 @@
       { id: 'enchufe_macho', name: 'Enchufe Macho (Volante)', defaultMount: 'Volante' }
     ];
 
-    const STORAGE_KEY = 'MantencionProEDX_Visits_v4';
-    const STORES_KEY = 'MantencionProEDX_Stores_v4';
+    const PLUMBING_TYPES = [
+      'Sifón',
+      'Llave Angular / Paso',
+      'Flexible Agua',
+      'Unión / Fitting',
+      'Grifería / Válvula',
+      'Otro Gasfitería'
+    ];
+
+    const STORAGE_KEY = 'MantencionProEDX_Visits_v5';
+    const STORES_KEY = 'MantencionProEDX_Stores_v5';
 
     let visits = [];
     let savedStores = [];
+    let plumbingItems = [];
     let coldItems = [];
     let pendingItems = [];
     let photoItems = [];
@@ -729,12 +770,14 @@
     let sigCanvas, sigCtx, isDrawing = false, hasSignature = false;
 
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('visit-date').value = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('visit-date').value = today;
       renderLightingCatalog();
       renderOutletsCatalog();
       initSignaturePad();
       loadStores();
       loadVisits();
+      document.getElementById('visit-ot').value = generateNextOT(today);
 
       document.addEventListener('focusin', (e) => {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
@@ -746,6 +789,12 @@
 
       lucide.createIcons();
     });
+
+    function generateNextOT(dateStr) {
+      const cleanDate = (dateStr || new Date().toISOString().split('T')[0]).replace(/-/g, '');
+      const seq = String(visits.length + 1).padStart(3, '0');
+      return `OT-${cleanDate}-${seq}`;
+    }
 
     function getTimeGreeting() {
       const hour = new Date().getHours();
@@ -933,6 +982,54 @@
       let outletSum = 0;
       OUTLETS_CATALOG.forEach(item => { outletSum += parseInt(document.getElementById(`qty-${item.id}`).value, 10) || 0; });
       document.getElementById('outlets-total-badge').textContent = `${outletSum} enchufes`;
+    }
+
+    // ==================== PLUMBING (GASFITERÍA MENOR) ====================
+    function addPlumbingItem(data = null) {
+      plumbingItems.push({
+        id: data?.id || 'pl_' + Date.now() + Math.random().toString(36).slice(2, 6),
+        tipo: data?.tipo || 'Sifón',
+        qty: data?.qty || 1,
+        sector: data?.sector || '',
+        detalle: data?.detalle || ''
+      });
+      renderPlumbingList();
+    }
+
+    function removePlumbingItem(id) {
+      plumbingItems = plumbingItems.filter(p => p.id !== id);
+      renderPlumbingList();
+    }
+
+    function updatePlumbingField(id, field, value) {
+      const item = plumbingItems.find(p => p.id === id);
+      if (item) item[field] = value;
+    }
+
+    function renderPlumbingList() {
+      const container = document.getElementById('plumbing-list');
+      const empty = document.getElementById('plumbing-empty');
+      empty.classList.toggle('hidden', plumbingItems.length > 0);
+
+      container.innerHTML = plumbingItems.map((item, idx) => `
+        <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Ítem Gasfitería #${idx + 1}</span>
+            <button type="button" onclick="removePlumbingItem('${item.id}')" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Quitar
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5">
+            <select onchange="updatePlumbingField('${item.id}', 'tipo', this.value)" class="lg:col-span-3 bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-500">
+              ${PLUMBING_TYPES.map(t => `<option value="${t}" ${item.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+            <input type="number" min="1" value="${item.qty}" oninput="updatePlumbingField('${item.id}', 'qty', Math.max(1, parseInt(this.value, 10) || 1))" placeholder="Cant." class="lg:col-span-2 bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-500" />
+            <input type="text" value="${escapeHtml(item.sector)}" oninput="updatePlumbingField('${item.id}', 'sector', this.value)" placeholder="Sector (ej: Lavamanos)" class="lg:col-span-3 bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-teal-500" />
+            <input type="text" value="${escapeHtml(item.detalle)}" oninput="updatePlumbingField('${item.id}', 'detalle', this.value)" placeholder="Detalle (ej: Cambio por filtración)" class="lg:col-span-4 bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-teal-500" />
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
     }
 
     // ==================== COLD MACHINES (HUSSMANN Y/O VENTUS) ====================
@@ -1214,23 +1311,27 @@
       if (raw) {
         visits = JSON.parse(raw);
       } else {
+        const today = new Date().toISOString().split('T')[0];
+        const cleanDate = today.replace(/-/g, '');
         visits = [{
           id: 'edx_demo_1',
+          ot: `OT-${cleanDate}-001`,
           store: 'Local 104 - La Florida',
-          date: new Date().toISOString().split('T')[0],
+          date: today,
           savedAt: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
           type: 'Mantención Preventiva',
           status: 'Operativo con Observaciones',
           lighting: [
-            { id: 'panel_18_emb', name: 'Panel LED 18W Embutido', unit: 'unid.', qty: 4, location: 'Sala ventas' },
-            { id: 'tubo_t5_120', name: 'Tubo LED T5 — 120 cm', unit: 'unid.', qty: 3, location: 'Góndola' }
+            { id: 'panel_18_emb', name: 'Panel LED 18W Embutido', unit: 'unid.', qty: 4, location: 'Sala ventas' }
           ],
           lightingNotes: 'Iluminación interior repuesta.',
           caluga: { status: 'Reparada y Encendida', cinta: 2, trafo: 1, notes: 'Cambio transformador y cinta LED.' },
           outlets: [{ id: 'enchufe_doble', name: 'Enchufe Doble', qty: 2, mount: 'Empotrado', location: 'Caja 1' }],
           outletsNotes: '',
+          plumbing: [{ id: 'pl1', tipo: 'Sifón', qty: 1, sector: 'Baño / Lavamanos', detalle: 'Cambio por filtración' }],
+          plumbingNotes: '',
           cold: [{ id: 'c1', brand: 'Ventus', equipo: 'Mural Lácteos', condensador: true, drenaje: true, temperatura: true, notas: 'Limpieza condensador OK' }],
-          extinguishers: { status: 'Vigentes y con carga al día', qty: 4, notes: '' },
+          extinguishers: { status: 'Cambiados / Recargados en visita', qty: 1, notes: 'Recambio extintor PQS 6kg' },
           pendings: [{ id: 'p1', descripcion: 'Revisar luminaria sector cajas', prioridad: 'Media', material: '1x Panel 18W' }],
           photos: [],
           reception: { name: 'Camila Soto', role: 'Asesor Local', notes: 'Conforme.', signature: null }
@@ -1255,6 +1356,8 @@
       e.preventDefault();
       const editingId = document.getElementById('editing-id').value;
       const storeName = document.getElementById('visit-store').value.trim();
+      const visitDate = document.getElementById('visit-date').value;
+      const otNumber = (document.getElementById('visit-ot').value || '').trim() || generateNextOT(visitDate);
       if (!storeName) return showToast('Ingresa el local', 'error');
 
       registerStoreAuto(storeName);
@@ -1274,8 +1377,9 @@
 
       const visitObj = {
         id: editingId || 'edx_' + Date.now(),
+        ot: otNumber,
         store: storeName,
-        date: document.getElementById('visit-date').value,
+        date: visitDate,
         savedAt: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
         type: document.getElementById('visit-type').value,
         status: document.getElementById('visit-status').value,
@@ -1289,6 +1393,8 @@
         },
         outlets,
         outletsNotes: document.getElementById('outlets-notes').value.trim(),
+        plumbing: plumbingItems.filter(p => p.tipo || p.sector || p.detalle),
+        plumbingNotes: document.getElementById('plumbing-notes').value.trim(),
         cold: coldItems.filter(v => v.equipo.trim() || v.notas.trim() || v.brand),
         extinguishers: {
           status: document.getElementById('ext-status').value,
@@ -1311,7 +1417,7 @@
         showToast('Visita actualizada');
       } else {
         visits.unshift(visitObj);
-        showToast('Visita guardada');
+        showToast(`Visita guardada (${otNumber})`);
       }
 
       persistVisits();
@@ -1326,7 +1432,9 @@
       document.getElementById('editing-id').value = '';
       document.getElementById('form-mode-title').textContent = 'Registro de Visita';
       document.getElementById('submit-btn-text').textContent = 'Guardar Visita y Generar Informe';
-      document.getElementById('visit-date').value = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('visit-date').value = today;
+      document.getElementById('visit-ot').value = generateNextOT(today);
       document.getElementById('rec-notes').value = 'Conforme con los trabajos realizados en tienda.';
 
       LIGHTING_CATALOG.forEach(item => {
@@ -1340,9 +1448,11 @@
         document.getElementById(`card-${item.id}`).classList.remove('border-purple-500/60', 'bg-obsidian-900');
       });
 
+      plumbingItems = [];
       coldItems = [];
       pendingItems = [];
       photoItems = [];
+      renderPlumbingList();
       renderColdList();
       renderPendingList();
       renderPhotosGrid();
@@ -1360,6 +1470,7 @@
       document.getElementById('submit-btn-text').textContent = 'Actualizar Visita';
 
       document.getElementById('visit-store').value = v.store;
+      document.getElementById('visit-ot').value = v.ot || generateNextOT(v.date);
       document.getElementById('visit-date').value = v.date;
       document.getElementById('visit-type').value = v.type;
       document.getElementById('visit-status').value = v.status;
@@ -1389,6 +1500,10 @@
         }
       });
       document.getElementById('outlets-notes').value = v.outletsNotes || '';
+
+      plumbingItems = JSON.parse(JSON.stringify(v.plumbing || []));
+      document.getElementById('plumbing-notes').value = v.plumbingNotes || '';
+      renderPlumbingList();
 
       coldItems = JSON.parse(JSON.stringify(v.cold || v.ventus || []));
       pendingItems = JSON.parse(JSON.stringify(v.pendings || []));
@@ -1449,10 +1564,11 @@
         if (!q) return true;
         const coldArr = v.cold || v.ventus || [];
         const blob = [
-          v.store, v.date, v.type, v.lightingNotes, v.outletsNotes, v.caluga?.status, v.caluga?.notes,
-          v.reception?.name, v.reception?.role,
+          v.ot, v.store, v.date, v.type, v.lightingNotes, v.outletsNotes, v.plumbingNotes, v.caluga?.status, v.caluga?.notes,
+          v.extinguishers?.status, v.extinguishers?.notes, v.reception?.name, v.reception?.role,
           ...(v.lighting || []).map(l => `${l.name} ${l.location}`),
           ...(v.outlets || []).map(o => `${o.name} ${o.mount} ${o.location}`),
+          ...(v.plumbing || []).map(p => `${p.tipo} ${p.sector} ${p.detalle}`),
           ...coldArr.map(m => `${m.brand || ''} ${m.equipo} ${m.notas}`),
           ...(v.pendings || []).map(p => `${p.descripcion} ${p.material}`)
         ].join(' ').toLowerCase();
@@ -1474,6 +1590,7 @@
 
         const lightCount = (v.lighting || []).reduce((s, i) => s + i.qty, 0);
         const outletCount = (v.outlets || []).reduce((s, i) => s + i.qty, 0);
+        const plumbCount = (v.plumbing || []).length;
         const coldArr = v.cold || v.ventus || [];
         const pendCount = (v.pendings || []).length;
 
@@ -1482,17 +1599,18 @@
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="space-y-1.5">
                 <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">${escapeHtml(v.ot || 'S/N OT')}</span>
                   <span class="text-base font-bold text-white">${escapeHtml(v.store)}</span>
                   <span class="text-xs px-2.5 py-0.5 rounded-full border ${statusColor}">${escapeHtml(v.status)}</span>
-                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-300">${formatDate(v.date)} ${v.savedAt ? '• ' + v.savedAt : ''}</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">${formatDate(v.date)} ${v.savedAt ? '• ' + v.savedAt : ''}</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                   <span><strong class="text-slate-200">${lightCount}</strong> luces</span>
                   <span><strong class="text-slate-200">${outletCount}</strong> enchufes</span>
+                  <span><strong class="text-slate-200">${plumbCount}</strong> gasfitería</span>
                   <span><strong class="text-slate-200">${coldArr.length}</strong> máq. frío</span>
-                  <span>Caluga: <strong class="text-slate-200">${escapeHtml(v.caluga?.status || 'N/A')}</strong></span>
                   <span class="${pendCount > 0 ? 'text-orange-400 font-semibold' : ''}"><strong>${pendCount}</strong> pendientes</span>
-                  <span>Recibe: <strong class="text-slate-200">${escapeHtml(v.reception?.name || 'N/A')}</strong> (${escapeHtml(v.reception?.role || '')})</span>
+                  <span>Recibe: <strong class="text-slate-200">${escapeHtml(v.reception?.name || 'N/A')}</strong></span>
                 </div>
               </div>
 
@@ -1521,18 +1639,19 @@
                 <div class="text-cyan-300 pt-1">Caluga: ${escapeHtml(v.caluga?.status || '')} (Cinta: ${v.caluga?.cinta || 0}m, Trafo: ${v.caluga?.trafo || 0})</div>
               </div>
               <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 space-y-1">
-                <div class="font-bold text-purple-400">Enchufes</div>
-                ${(v.outlets || []).map(o => `<div>• ${o.qty}x ${escapeHtml(o.name)} [${escapeHtml(o.mount)}] ${o.location ? '(' + escapeHtml(o.location) + ')' : ''}</div>`).join('') || '<div class="text-slate-500">Sin enchufes</div>'}
+                <div class="font-bold text-teal-400">Enchufes y Gasfitería</div>
+                ${(v.outlets || []).map(o => `<div>• ${o.qty}x ${escapeHtml(o.name)} [${escapeHtml(o.mount)}]</div>`).join('') || ''}
+                ${(v.plumbing || []).map(p => `<div class="text-teal-300">• ${p.qty}x ${escapeHtml(p.tipo)} ${p.sector ? '(' + escapeHtml(p.sector) + ')' : ''} ${p.detalle ? '— ' + escapeHtml(p.detalle) : ''}</div>`).join('') || '<div class="text-slate-500">Sin gasfitería</div>'}
               </div>
               <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 space-y-1">
                 <div class="font-bold text-sky-400">Hussmann / Ventus y Extintores</div>
                 ${coldArr.map(m => `<div>• <strong>${escapeHtml(m.brand || 'Frío')}</strong> ${escapeHtml(m.equipo || '')}: ${escapeHtml(m.notas || 'OK')}</div>`).join('') || '<div class="text-slate-500">Sin máquinas</div>'}
-                <div class="pt-1">Extintores: ${escapeHtml(v.extinguishers?.status || '')} (${v.extinguishers?.qty || 0})</div>
+                <div class="pt-1">Extintores: ${escapeHtml(v.extinguishers?.status || '')} (${v.extinguishers?.qty || 0}) ${v.extinguishers?.notes ? '— ' + escapeHtml(v.extinguishers.notes) : ''}</div>
               </div>
               <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 space-y-1">
                 <div class="font-bold text-orange-400">Pendientes y Recepción</div>
                 ${(v.pendings || []).map(p => `<div class="text-orange-300">• [${escapeHtml(p.prioridad)}] ${escapeHtml(p.descripcion)}</div>`).join('') || '<div class="text-slate-500">Sin pendientes</div>'}
-                <div class="text-slate-300 pt-1">Recibió: ${escapeHtml(v.reception?.name || 'N/A')} (${escapeHtml(v.reception?.role || '')}) ${v.reception?.signature ? '• Firmado' : ''}</div>
+                <div class="text-slate-300 pt-1">Recibió: ${escapeHtml(v.reception?.name || 'N/A')} (${escapeHtml(v.reception?.role || '')})</div>
               </div>
             </div>
           </div>
@@ -1574,6 +1693,7 @@
       itemUsage['Cinta LED Caluga (mts)'] = { qty: 0, rubro: 'Caluga Exterior' };
       itemUsage['Transformador Caluga'] = { qty: 0, rubro: 'Caluga Exterior' };
       OUTLETS_CATALOG.forEach(c => { itemUsage[c.name] = { qty: 0, rubro: 'Enchufes' }; });
+      PLUMBING_TYPES.forEach(t => { itemUsage[t] = { qty: 0, rubro: 'Gasfitería' }; });
 
       let coldCount = 0;
 
@@ -1588,6 +1708,12 @@
         (v.outlets || []).forEach(i => {
           if (!itemUsage[i.name]) itemUsage[i.name] = { qty: 0, rubro: 'Enchufes' };
           itemUsage[i.name].qty += (i.qty || 0);
+        });
+
+        (v.plumbing || []).forEach(p => {
+          const key = p.tipo || 'Otro Gasfitería';
+          if (!itemUsage[key]) itemUsage[key] = { qty: 0, rubro: 'Gasfitería' };
+          itemUsage[key].qty += (parseInt(p.qty, 10) || 1);
         });
 
         coldCount += (v.cold || v.ventus || []).length;
@@ -1605,17 +1731,16 @@
       document.getElementById('inv-total-units').textContent = totalUnits;
       document.getElementById('inv-cold-count').textContent = coldCount;
 
-      // Rubros para gráfica de dona
       const rubroTotals = {
         'Iluminación Interior': 0,
         'Caluga Exterior': 0,
-        'Enchufes': 0
+        'Enchufes': 0,
+        'Gasfitería': 0
       };
       sortedEntries.forEach(x => {
         rubroTotals[x.rubro] = (rubroTotals[x.rubro] || 0) + x.qty;
       });
 
-      // Render Bar Chart
       const activeForBar = sortedEntries.filter(x => x.qty > 0);
       const barLabels = (activeForBar.length > 0 ? activeForBar : sortedEntries.slice(0, 6)).map(x => x.name);
       const barData = (activeForBar.length > 0 ? activeForBar : sortedEntries.slice(0, 6)).map(x => x.qty);
@@ -1629,7 +1754,7 @@
           datasets: [{
             label: 'Cantidad utilizada',
             data: barData,
-            backgroundColor: ['#38bdf8', '#fbbf24', '#a855f7', '#22d3ee', '#fb923c', '#34d399', '#818cf8', '#f472b6'],
+            backgroundColor: ['#38bdf8', '#fbbf24', '#2dd4bf', '#a855f7', '#22d3ee', '#fb923c', '#34d399', '#818cf8'],
             borderRadius: 6
           }]
         },
@@ -1637,24 +1762,14 @@
           responsive: true,
           maintainAspectRatio: false,
           indexAxis: 'y',
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            x: {
-              beginAtZero: true,
-              ticks: { color: '#94a3b8', precision: 0 },
-              grid: { color: '#1e293b' }
-            },
-            y: {
-              ticks: { color: '#e2e8f0', font: { size: 11 } },
-              grid: { display: false }
-            }
+            x: { beginAtZero: true, ticks: { color: '#94a3b8', precision: 0 }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#e2e8f0', font: { size: 11 } }, grid: { display: false } }
           }
         }
       });
 
-      // Render Doughnut Chart
       const dCtx = document.getElementById('chart-rubros-doughnut').getContext('2d');
       if (doughnutChartInstance) doughnutChartInstance.destroy();
       doughnutChartInstance = new Chart(dCtx, {
@@ -1663,7 +1778,7 @@
           labels: Object.keys(rubroTotals),
           datasets: [{
             data: Object.values(rubroTotals),
-            backgroundColor: ['#f59e0b', '#06b6d4', '#a855f7'],
+            backgroundColor: ['#f59e0b', '#06b6d4', '#a855f7', '#14b8a6'],
             borderColor: '#0f131a',
             borderWidth: 3
           }]
@@ -1672,23 +1787,20 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { color: '#cbd5e1', padding: 14, font: { size: 12 } }
-            }
+            legend: { position: 'bottom', labels: { color: '#cbd5e1', padding: 14, font: { size: 12 } } }
           }
         }
       });
 
-      // Render Ranking Bars
       const maxQty = Math.max(1, ...sortedEntries.map(x => x.qty));
+      const colorMap = {
+        'Iluminación Interior': 'bg-amber-400',
+        'Caluga Exterior': 'bg-cyan-400',
+        'Enchufes': 'bg-purple-400',
+        'Gasfitería': 'bg-teal-400'
+      };
       document.getElementById('inv-ranking-bars').innerHTML = sortedEntries.map(x => {
         const pct = Math.round((x.qty / maxQty) * 100);
-        const barColor = x.rubro === 'Iluminación Interior'
-          ? 'bg-amber-400'
-          : x.rubro === 'Caluga Exterior'
-            ? 'bg-cyan-400'
-            : 'bg-purple-400';
         return `
           <div class="space-y-1">
             <div class="flex items-center justify-between text-xs">
@@ -1696,21 +1808,21 @@
               <span class="font-bold text-white">${x.qty}</span>
             </div>
             <div class="w-full h-2.5 bg-obsidian-950 rounded-full overflow-hidden border border-slate-800">
-              <div class="${barColor} h-full rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+              <div class="${colorMap[x.rubro] || 'bg-cyan-400'} h-full rounded-full transition-all duration-300" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // ==================== REPORT & WHATSAPP AUTO GREETING + THEMATIC EMOJIS ====================
+    // ==================== REPORT & WHATSAPP (REFLEJANDO TODO LO REALIZADO) ====================
     function populateReportSelector() {
       const sel = document.getElementById('report-visit-selector');
       if (visits.length === 0) {
         sel.innerHTML = `<option value="">Sin visitas</option>`;
         return;
       }
-      sel.innerHTML = visits.map(v => `<option value="${v.id}">${formatDate(v.date)} — ${escapeHtml(v.store)}</option>`).join('');
+      sel.innerHTML = visits.map(v => `<option value="${v.id}">${escapeHtml(v.ot || 'OT')} — ${formatDate(v.date)} — ${escapeHtml(v.store)}</option>`).join('');
       if (currentReportId && visits.some(v => v.id === currentReportId)) sel.value = currentReportId;
       else { currentReportId = visits[0].id; sel.value = currentReportId; }
     }
@@ -1742,33 +1854,50 @@
       const greeting = getTimeGreeting();
       const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
       const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
+      const activePlumbing = (v.plumbing || []).filter(i => reportVisibility.plumbing && reportVisibility.plumbingItems[i.id]);
       const coldArr = v.cold || v.ventus || [];
       const activeCold = coldArr.filter(i => reportVisibility.cold && reportVisibility.coldItems[i.id]);
       const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
 
       const hechos = [];
-      if (activeLights.length > 0) {
-        hechos.push(`💡 Iluminación: ${activeLights.map(i => `${i.qty} ${i.name}`).join(', ')}`);
-      }
-      if (reportVisibility.caluga && v.caluga?.status && v.caluga.status !== 'Sin intervención / Operativa') {
-        const extras = [];
-        if (v.caluga.cinta > 0) extras.push(`${v.caluga.cinta}m cinta`);
-        if (v.caluga.trafo > 0) extras.push(`${v.caluga.trafo} trafo`);
-        hechos.push(`🪧 Caluga (${v.caluga.status})${extras.length ? ': ' + extras.join(', ') : ''}`);
-      }
-      if (activeOutlets.length > 0) {
-        hechos.push(`🔌 Enchufes: ${activeOutlets.map(i => `${i.qty}x ${i.name} [${i.mount}]`).join(', ')}`);
-      }
-      if (activeCold.length > 0) {
-        hechos.push(`❄️ Frío: ${activeCold.map(m => `${m.brand || 'Equipo'}${m.equipo ? ' (' + m.equipo + ')' : ''}`).join(', ')}`);
-      }
-      if (reportVisibility.extinguishers && (v.extinguishers?.status === 'Cambiados / Recargados en visita' || v.extinguishers?.qty > 0)) {
-        hechos.push(`🧯 Extintores: ${v.extinguishers.status} (${v.extinguishers.qty})`);
+      if (activeLights.length > 0 || (reportVisibility.lighting && v.lightingNotes)) {
+        const parts = activeLights.map(i => `${i.qty} ${i.name}${i.location ? ' (' + i.location + ')' : ''}`);
+        if (v.lightingNotes) parts.push(v.lightingNotes);
+        hechos.push(`💡 Iluminación: ${parts.join(' — ')}`);
       }
 
+      if (reportVisibility.caluga && ((v.caluga?.cinta || 0) > 0 || (v.caluga?.trafo || 0) > 0 || v.caluga?.notes || (v.caluga?.status && v.caluga.status !== 'Sin intervención / Operativa'))) {
+        const extras = [];
+        if (v.caluga.cinta > 0) extras.push(`${v.caluga.cinta}m cinta LED`);
+        if (v.caluga.trafo > 0) extras.push(`${v.caluga.trafo} transformador`);
+        if (v.caluga.notes) extras.push(v.caluga.notes);
+        hechos.push(`🪧 Caluga (${v.caluga.status}): ${extras.length ? extras.join(', ') : 'revisada'}`);
+      }
+
+      if (activeOutlets.length > 0 || (reportVisibility.outlets && v.outletsNotes)) {
+        const parts = activeOutlets.map(i => `${i.qty}x ${i.name} [${i.mount}]${i.location ? ' (' + i.location + ')' : ''}`);
+        if (v.outletsNotes) parts.push(v.outletsNotes);
+        hechos.push(`🔌 Enchufes: ${parts.join(' — ')}`);
+      }
+
+      if (activePlumbing.length > 0 || (reportVisibility.plumbing && v.plumbingNotes)) {
+        const parts = activePlumbing.map(p => `${p.qty}x ${p.tipo}${p.sector ? ' (' + p.sector + ')' : ''}${p.detalle ? ' - ' + p.detalle : ''}`);
+        if (v.plumbingNotes) parts.push(v.plumbingNotes);
+        hechos.push(`🚿 Gasfitería: ${parts.join(' / ')}`);
+      }
+
+      if (activeCold.length > 0) {
+        hechos.push(`❄️ Frío: ${activeCold.map(m => `${m.brand || 'Equipo'}${m.equipo ? ' (' + m.equipo + ')' : ''}${m.notas ? ' - ' + m.notas : ''}`).join(' / ')}`);
+      }
+
+      if (reportVisibility.extinguishers && (v.extinguishers?.status === 'Cambiados / Recargados en visita' || v.extinguishers?.qty > 0 || v.extinguishers?.notes)) {
+        hechos.push(`🧯 Extintores: ${v.extinguishers.status}${v.extinguishers.qty > 0 ? ' (' + v.extinguishers.qty + ' unid.)' : ''}${v.extinguishers.notes ? ' — ' + v.extinguishers.notes : ''}`);
+      }
+
+      const otTag = v.ot ? ` | *${v.ot}*` : '';
       const speech = activePendings.length > 0
-        ? `🛠️ ${greeting}, compartimos el resumen de mantención en 🏪 *${v.store}* (${formatDate(v.date)}). Dejamos operativo lo indicado y quedó anotado lo pendiente para seguimiento.`
-        : `🛠️ ${greeting}, compartimos el resumen de mantención en 🏪 *${v.store}* (${formatDate(v.date)}). Todo lo revisado quedó operativo sin pendientes.`;
+        ? `🛠️ ${greeting}, compartimos el resumen de mantención en 🏪 *${v.store}*${otTag} (${formatDate(v.date)}). Dejamos operativo lo indicado y quedó anotado lo pendiente para seguimiento.`
+        : `🛠️ ${greeting}, compartimos el resumen de mantención en 🏪 *${v.store}*${otTag} (${formatDate(v.date)}). Todo lo revisado quedó operativo sin pendientes.`;
 
       const lines = [
         speech,
@@ -1794,28 +1923,39 @@
       const greeting = getTimeGreeting();
       const lines = [
         `🛠️ *${greeting} — INFORME MANTENCIÓN EDX*`,
-        `🏪 *Local:* ${v.store} (${formatDate(v.date)})`,
+        `📄 *OT:* ${v.ot || 'S/N'} | 🏪 *Local:* ${v.store} (${formatDate(v.date)})`,
         `📌 *Estado:* ${v.status}`,
         ``
       ];
       const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
-      if (reportVisibility.lighting && activeLights.length > 0) {
+      if (reportVisibility.lighting && (activeLights.length > 0 || v.lightingNotes)) {
         lines.push(`💡 *Iluminación:*`);
         activeLights.forEach(i => lines.push(`- ${i.qty} ${i.unit} ${i.name}${i.location ? ' (' + i.location + ')' : ''}`));
+        if (v.lightingNotes) lines.push(`- Detalle: ${v.lightingNotes}`);
       }
-      if (reportVisibility.caluga && v.caluga?.status !== 'Sin intervención / Operativa') {
-        lines.push(`🪧 *Caluga:* ${v.caluga.status} (Cinta: ${v.caluga.cinta}m, Trafo: ${v.caluga.trafo})`);
+      if (reportVisibility.caluga && ((v.caluga?.cinta || 0) > 0 || (v.caluga?.trafo || 0) > 0 || v.caluga?.notes || v.caluga?.status !== 'Sin intervención / Operativa')) {
+        lines.push(`🪧 *Caluga:* ${v.caluga.status} (Cinta: ${v.caluga.cinta}m, Trafo: ${v.caluga.trafo}) ${v.caluga.notes ? '— ' + v.caluga.notes : ''}`);
       }
       const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
-      if (reportVisibility.outlets && activeOutlets.length > 0) {
+      if (reportVisibility.outlets && (activeOutlets.length > 0 || v.outletsNotes)) {
         lines.push(`🔌 *Enchufes:*`);
         activeOutlets.forEach(i => lines.push(`- ${i.qty}x ${i.name} [${i.mount}]${i.location ? ' (' + i.location + ')' : ''}`));
+        if (v.outletsNotes) lines.push(`- Detalle: ${v.outletsNotes}`);
+      }
+      const activePlumbing = (v.plumbing || []).filter(i => reportVisibility.plumbing && reportVisibility.plumbingItems[i.id]);
+      if (reportVisibility.plumbing && (activePlumbing.length > 0 || v.plumbingNotes)) {
+        lines.push(`🚿 *Gasfitería:*`);
+        activePlumbing.forEach(p => lines.push(`- ${p.qty}x ${p.tipo}${p.sector ? ' (' + p.sector + ')' : ''} ${p.detalle ? '— ' + p.detalle : ''}`));
+        if (v.plumbingNotes) lines.push(`- Detalle: ${v.plumbingNotes}`);
       }
       const coldArr = v.cold || v.ventus || [];
       const activeCold = coldArr.filter(i => reportVisibility.cold && reportVisibility.coldItems[i.id]);
       if (reportVisibility.cold && activeCold.length > 0) {
         lines.push(`❄️ *Equipos de Frío:*`);
         activeCold.forEach(m => lines.push(`- ${m.brand || 'Equipo'} ${m.equipo || ''}: ${m.notas || 'OK'}`));
+      }
+      if (reportVisibility.extinguishers) {
+        lines.push(`🧯 *Extintores:* ${v.extinguishers?.status || ''} (${v.extinguishers?.qty || 0}) ${v.extinguishers?.notes ? '— ' + v.extinguishers.notes : ''}`);
       }
       const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
       if (reportVisibility.pendings && activePendings.length > 0) {
@@ -1839,6 +1979,7 @@
       }
 
       const coldArr = v.cold || v.ventus || [];
+      const plumbArr = v.plumbing || [];
 
       reportVisibility = {
         lighting: (v.lighting || []).length > 0 || Boolean(v.lightingNotes),
@@ -1846,9 +1987,11 @@
         caluga: v.caluga?.status !== 'Sin intervención / Operativa' || (v.caluga?.cinta || 0) > 0 || (v.caluga?.trafo || 0) > 0 || Boolean(v.caluga?.notes),
         outlets: (v.outlets || []).length > 0 || Boolean(v.outletsNotes),
         outletsItems: Object.fromEntries((v.outlets || []).map(i => [i.id, true])),
+        plumbing: plumbArr.length > 0 || Boolean(v.plumbingNotes),
+        plumbingItems: Object.fromEntries(plumbArr.map(i => [i.id, true])),
         cold: coldArr.length > 0,
         coldItems: Object.fromEntries(coldArr.map(i => [i.id, true])),
-        extinguishers: v.extinguishers?.status !== 'No revisado en esta visita' && ((v.extinguishers?.qty || 0) > 0 || Boolean(v.extinguishers?.notes) || v.extinguishers?.status === 'Requiere cambio urgente (Vencido/Descargado)'),
+        extinguishers: v.extinguishers?.status !== 'No revisado en esta visita' && ((v.extinguishers?.qty || 0) > 0 || Boolean(v.extinguishers?.notes) || v.extinguishers?.status === 'Cambiados / Recargados en visita' || v.extinguishers?.status === 'Requiere cambio urgente (Vencido/Descargado)'),
         pendings: (v.pendings || []).length > 0,
         pendingItems: Object.fromEntries((v.pendings || []).map(i => [i.id, true])),
         photos: (v.photos || []).length > 0,
@@ -1875,6 +2018,7 @@
     function renderReportToggles(v) {
       const container = document.getElementById('report-toggles-container');
       const coldArr = v.cold || v.ventus || [];
+      const plumbArr = v.plumbing || [];
 
       const buildSectionToggle = (key, label, childrenHtml = '') => `
         <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 space-y-2">
@@ -1897,6 +2041,13 @@
         <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
           <span class="truncate pr-2">${i.qty}x ${escapeHtml(i.name)} (${escapeHtml(i.mount)})</span>
           <input type="checkbox" ${reportVisibility.outletsItems[i.id] ? 'checked' : ''} onchange="toggleReportKey('outletsItems', '${i.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
+        </label>
+      `).join('');
+
+      const plumbingChildren = plumbArr.map((p, idx) => `
+        <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
+          <span class="truncate pr-2">${p.qty}x ${escapeHtml(p.tipo || '#' + (idx + 1))}</span>
+          <input type="checkbox" ${reportVisibility.plumbingItems[p.id] ? 'checked' : ''} onchange="toggleReportKey('plumbingItems', '${p.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
         </label>
       `).join('');
 
@@ -1925,6 +2076,7 @@
         buildSectionToggle('lighting', 'Iluminación Interior', lightingChildren),
         buildSectionToggle('caluga', 'Caluga Exterior'),
         buildSectionToggle('outlets', 'Enchufes', outletsChildren),
+        buildSectionToggle('plumbing', 'Gasfitería Menor', plumbingChildren),
         buildSectionToggle('cold', 'Máquinas Hussmann / Ventus', coldChildren),
         buildSectionToggle('extinguishers', 'Extintores'),
         buildSectionToggle('pendings', 'Pendientes', pendingChildren),
@@ -1937,6 +2089,8 @@
       const sheet = document.getElementById('report-print-sheet');
       const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
       const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
+      const plumbArr = v.plumbing || [];
+      const activePlumbing = plumbArr.filter(i => reportVisibility.plumbing && reportVisibility.plumbingItems[i.id]);
       const coldArr = v.cold || v.ventus || [];
       const activeCold = coldArr.filter(i => reportVisibility.cold && reportVisibility.coldItems[i.id]);
       const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
@@ -1947,6 +2101,7 @@
           <div>
             <div class="text-xs font-bold uppercase tracking-widest text-blue-700">Área de Mantención — EDX</div>
             <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">INFORME TÉCNICO</h2>
+            <div class="inline-block mt-1 text-xs font-extrabold px-2.5 py-0.5 rounded bg-slate-900 text-white">${escapeHtml(v.ot || 'S/N OT')}</div>
           </div>
           <div class="text-left sm:text-right text-xs space-y-1">
             <div class="font-bold text-slate-900">${escapeHtml(v.status)}</div>
@@ -1955,59 +2110,82 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
           <div><span class="text-slate-500 block">Local:</span><strong class="text-sm text-slate-900">${escapeHtml(v.store)}</strong></div>
+          <div><span class="text-slate-500 block">N° Orden de Trabajo:</span><strong class="text-sm text-blue-800">${escapeHtml(v.ot || 'S/N')}</strong></div>
           <div><span class="text-slate-500 block">Área Emitente:</span><strong class="text-sm text-slate-900">Área de Mantención EDX</strong></div>
         </div>
 
-        ${reportVisibility.lighting && activeLights.length > 0 ? `
+        ${reportVisibility.lighting && (activeLights.length > 0 || v.lightingNotes) ? `
           <div class="space-y-2">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">1. Iluminación Interior</h3>
-            <table class="w-full text-xs border-collapse">
-              <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Insumo</th><th class="p-2 border border-slate-300 text-center w-24">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
-              <tbody>${activeLights.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty} ${i.unit}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
-            </table>
+            ${activeLights.length > 0 ? `
+              <table class="w-full text-xs border-collapse">
+                <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Insumo</th><th class="p-2 border border-slate-300 text-center w-24">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
+                <tbody>${activeLights.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty} ${i.unit}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
+              </table>
+            ` : ''}
+            ${v.lightingNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.lightingNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.caluga ? `
           <div class="space-y-1.5">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">2. Caluga Exterior</h3>
-            <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200 flex flex-wrap gap-4">
-              <span>Estado: <strong>${escapeHtml(v.caluga?.status || '')}</strong></span>
-              <span>Cinta LED: <strong>${v.caluga?.cinta || 0} mts</strong></span>
-              <span>Transformador: <strong>${v.caluga?.trafo || 0} unid.</strong></span>
+            <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200 space-y-1">
+              <div class="flex flex-wrap gap-4">
+                <span>Estado: <strong>${escapeHtml(v.caluga?.status || '')}</strong></span>
+                <span>Cinta LED: <strong>${v.caluga?.cinta || 0} mts</strong></span>
+                <span>Transformador: <strong>${v.caluga?.trafo || 0} unid.</strong></span>
+              </div>
+              ${v.caluga?.notes ? `<div><strong>Detalle:</strong> ${escapeHtml(v.caluga.notes)}</div>` : ''}
             </div>
           </div>
         ` : ''}
 
-        ${reportVisibility.outlets && activeOutlets.length > 0 ? `
+        ${reportVisibility.outlets && (activeOutlets.length > 0 || v.outletsNotes) ? `
           <div class="space-y-2">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">3. Enchufes</h3>
-            <table class="w-full text-xs border-collapse">
-              <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Tipo</th><th class="p-2 border border-slate-300">Montaje</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
-              <tbody>${activeOutlets.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300">${escapeHtml(i.mount)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
-            </table>
+            ${activeOutlets.length > 0 ? `
+              <table class="w-full text-xs border-collapse">
+                <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Tipo</th><th class="p-2 border border-slate-300">Montaje</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
+                <tbody>${activeOutlets.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300">${escapeHtml(i.mount)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
+              </table>
+            ` : ''}
+            ${v.outletsNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.outletsNotes)}</div>` : ''}
+          </div>
+        ` : ''}
+
+        ${reportVisibility.plumbing && (activePlumbing.length > 0 || v.plumbingNotes) ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Gasfitería Menor</h3>
+            ${activePlumbing.length > 0 ? `
+              <table class="w-full text-xs border-collapse">
+                <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Elemento</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th><th class="p-2 border border-slate-300">Detalle</th></tr></thead>
+                <tbody>${activePlumbing.map(p => `<tr><td class="p-2 border border-slate-300 font-semibold">${escapeHtml(p.tipo)}</td><td class="p-2 border border-slate-300 text-center font-bold">${p.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(p.sector || 'General')}</td><td class="p-2 border border-slate-300">${escapeHtml(p.detalle || '-')}</td></tr>`).join('')}</tbody>
+              </table>
+            ` : ''}
+            ${v.plumbingNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.plumbingNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.cold && activeCold.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Máquinas Hussmann y/o Ventus</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Máquinas Hussmann y/o Ventus</h3>
             ${activeCold.map((m, idx) => `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>${idx + 1}. ${escapeHtml(m.brand || 'Equipo')} — ${escapeHtml(m.equipo || 'Sector')}</strong> — ${escapeHtml(m.notas || 'Mantención realizada')}</div>`).join('')}
           </div>
         ` : ''}
 
         ${reportVisibility.extinguishers ? `
           <div class="space-y-1.5">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Extintores</h3>
-            <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200">Estado: <strong>${escapeHtml(v.extinguishers?.status || '')}</strong> (${v.extinguishers?.qty || 0} unid.) ${v.extinguishers?.notes ? '— ' + escapeHtml(v.extinguishers.notes) : ''}</div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">6. Extintores</h3>
+            <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200">Estado: <strong>${escapeHtml(v.extinguishers?.status || '')}</strong> (${v.extinguishers?.qty || 0} unid.) ${v.extinguishers?.notes ? '— <strong>Detalle:</strong> ' + escapeHtml(v.extinguishers.notes) : ''}</div>
           </div>
         ` : ''}
 
         ${reportVisibility.pendings && activePendings.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-orange-800 border-b border-orange-300 pb-1">6. Pendientes</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-orange-800 border-b border-orange-300 pb-1">7. Pendientes</h3>
             <ul class="list-disc pl-5 text-xs space-y-1">
               ${activePendings.map(p => `<li><strong>[${escapeHtml(p.prioridad)}]</strong> ${escapeHtml(p.descripcion)} ${p.material ? `<em>(${escapeHtml(p.material)})</em>` : ''}</li>`).join('')}
             </ul>
@@ -2016,7 +2194,7 @@
 
         ${reportVisibility.photos && activePhotos.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">7. Fotos</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">8. Fotos</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
               ${activePhotos.map(p => `<div class="border border-slate-300 rounded-lg overflow-hidden"><img src="${p.dataUrl}" class="w-full h-28 object-cover" /><div class="p-1.5 text-[11px]"><strong>[${escapeHtml(p.tag)}]</strong> ${escapeHtml(p.caption || '')}</div></div>`).join('')}
             </div>
@@ -2064,8 +2242,9 @@
       btn.disabled = true;
       btn.innerHTML = `Generando PDF...`;
 
+      const safeOT = (v.ot || 'OT').replace(/[^a-zA-Z0-9_-]/g, '_');
       const safeStore = v.store.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `Informe_${safeStore}_${v.date}.pdf`;
+      const filename = `${safeOT}_${safeStore}_${v.date}.pdf`;
 
       html2pdf().set({
         margin: [10, 10, 10, 10],
