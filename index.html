@@ -1,1 +1,2196 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MantenciónPro EDX — Registro Técnico y Reportes en Terreno</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: {
+              950: '#090b10',
+              900: '#0f131a',
+              850: '#141923',
+              800: '#1a202c',
+              700: '#262f40'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #0f131a; }
+    ::-webkit-scrollbar-thumb { background: #262f40; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4861; }
 
+    @media print {
+      body * { visibility: hidden; }
+      #report-print-sheet, #report-print-sheet * { visibility: visible; }
+      #report-print-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 16px !important;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-obsidian-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-500/30 selection:text-blue-200">
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Navigation -->
+  <header class="sticky top-0 z-30 bg-obsidian-900/95 backdrop-blur border-b border-slate-800 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-900/30">
+          <i data-lucide="wrench" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight text-white">MantenciónPro <span class="text-cyan-400">EDX</span></h1>
+            <span id="autosave-badge" class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Autoguardado activo
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Registro Técnico en Terreno e Informes Operativos</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs & Backup -->
+      <div class="flex flex-wrap items-center gap-2">
+        <nav class="flex items-center gap-1.5 bg-obsidian-950 p-1 rounded-xl border border-slate-800">
+          <button id="tab-form" onclick="switchView('form')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white shadow">
+            <i data-lucide="clipboard-plus" class="w-4 h-4"></i>
+            <span>Nueva Visita</span>
+          </button>
+          <button id="tab-history" onclick="switchView('history')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+            <i data-lucide="history" class="w-4 h-4"></i>
+            <span>Historial</span>
+            <span id="history-count-badge" class="ml-0.5 text-xs bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-full">0</span>
+          </button>
+          <button id="tab-report" onclick="switchView('report')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+            <i data-lucide="file-check-2" class="w-4 h-4"></i>
+            <span>Informe Técnico</span>
+          </button>
+        </nav>
+
+        <button onclick="openBackupModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs font-medium text-slate-200 transition-colors" title="Gestionar respaldo y locales">
+          <i data-lucide="database-backup" class="w-4 h-4 text-cyan-400"></i>
+          <span class="hidden sm:inline">Respaldo y Locales</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ==================== VIEW 1: FORMULARIO DE VISITA ==================== -->
+    <section id="view-form" class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+        <div>
+          <h2 id="form-mode-title" class="text-lg font-semibold text-white">Registro de Visita de Mantención</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Ingresa el local manualmente (se guardará en memoria automática) y marca solo lo realizado en terreno.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="resetForm()" class="px-3 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 transition-colors">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            Limpiar Formulario
+          </button>
+        </div>
+      </div>
+
+      <form id="visit-form" onsubmit="saveVisit(event)" class="space-y-6">
+        <input type="hidden" id="editing-id" value="" />
+
+        <!-- 1. Datos Generales de la Visita -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+            <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+              <i data-lucide="store" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-white text-base">1. Datos del Local y Visita</h3>
+              <p class="text-xs text-slate-400">Identificación de la sucursal (escritura manual con autocompletado guardado)</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="lg:col-span-2">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-medium text-slate-300">Nombre o Código del Local *</label>
+                <span id="saved-stores-hint" class="text-[11px] text-cyan-400">0 locales guardados</span>
+              </div>
+              <div class="relative">
+                <input type="text" id="visit-store" list="stores-datalist" required placeholder="Ej: Local 104 - La Florida (se guarda solo al registrar)" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                <datalist id="stores-datalist"></datalist>
+              </div>
+              <!-- Quick chips de últimos locales usados -->
+              <div id="recent-stores-chips" class="flex flex-wrap gap-1.5 mt-2"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Fecha de Visita *</label>
+              <input type="date" id="visit-date" required class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Tipo de Atención</label>
+              <select id="visit-type" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="Mantención Preventiva">Mantención Preventiva</option>
+                <option value="Correctiva / Emergencia">Correctiva / Emergencia</option>
+                <option value="Inspección y Levantamiento">Inspección y Levantamiento</option>
+                <option value="Instalación / Mejora">Instalación / Mejora</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Técnico(s) Responsable(s) *</label>
+              <input type="text" id="visit-tech" required value="Eduardo Aravena — Área Mantención EDX" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Estado General al Retirarse</label>
+              <select id="visit-status" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="Local 100% Operativo">Local 100% Operativo</option>
+                <option value="Operativo con Observaciones">Operativo con Observaciones</option>
+                <option value="Pendiente Repuesto / Segunda Visita">Pendiente Repuesto / Segunda Visita</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Iluminación Interior (Catálogo Exacto Separado) -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                <i data-lucide="lightbulb" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-base">2. Iluminación Interior (Insumos Separados)</h3>
+                <p class="text-xs text-slate-400">Paneles 18W/24W (embutidos o sobrepuestos), dicroicos, tubos T5, cinta LED y fuente de poder por separado</p>
+              </div>
+            </div>
+            <span id="lighting-total-badge" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">0 ítems usados</span>
+          </div>
+
+          <div id="lighting-catalog-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+
+          <div class="pt-2">
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Observaciones de Iluminación Interior (opcional)</label>
+            <input type="text" id="lighting-notes" placeholder="Ej: Se reemplazaron paneles quemados en pasillo central y fuente de poder de cenefa cajas..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <!-- 3. Iluminación Exterior / Caluga -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+            <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+              <i data-lucide="sun" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-white text-base">3. Iluminación Exterior y Caluga de Local</h3>
+              <p class="text-xs text-slate-400">Cinta LED y transformador registrados de forma independiente</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Estado de Caluga / Letrero</label>
+              <select id="caluga-status" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                <option value="Sin intervención / Operativa">Sin intervención / Operativa</option>
+                <option value="Reparada y Encendida">Reparada y Encendida</option>
+                <option value="Cambio parcial de iluminación">Cambio parcial de iluminación</option>
+                <option value="Pendiente acceso / altura">Pendiente acceso / altura</option>
+              </select>
+            </div>
+
+            <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-medium text-slate-200">Cinta LED en Caluga</div>
+                <div class="text-[11px] text-slate-400">Metros / tramos instalados</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="adjustSimpleCounter('caluga-cinta', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold">-</button>
+                <input type="number" id="caluga-cinta" value="0" min="0" class="w-12 text-center bg-obsidian-900 border border-slate-700 rounded-lg py-1 text-sm font-semibold text-cyan-300" />
+                <button type="button" onclick="adjustSimpleCounter('caluga-cinta', 1)" class="w-8 h-8 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">+</button>
+              </div>
+            </div>
+
+            <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-medium text-slate-200">Transformador Caluga</div>
+                <div class="text-[11px] text-slate-400">Fuente estanca reemplazada</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="adjustSimpleCounter('caluga-trafo', -1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold">-</button>
+                <input type="number" id="caluga-trafo" value="0" min="0" class="w-12 text-center bg-obsidian-900 border border-slate-700 rounded-lg py-1 text-sm font-semibold text-cyan-300" />
+                <button type="button" onclick="adjustSimpleCounter('caluga-trafo', 1)" class="w-8 h-8 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Detalle de Caluga Exterior (opcional)</label>
+            <input type="text" id="caluga-notes" placeholder="Ej: Se reemplazó transformador quemado de 12V y se selló caja de conexión exterior..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+          </div>
+        </div>
+
+        <!-- 4. Electricidad y Enchufes -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                <i data-lucide="plug-zap" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-base">4. Enchufes y Puntos Eléctricos</h3>
+                <p class="text-xs text-slate-400">Enchufe simple, doble, triple o macho indicando montaje y sector</p>
+              </div>
+            </div>
+            <span id="outlets-total-badge" class="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">0 enchufes</span>
+          </div>
+
+          <div id="outlets-catalog-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Detalle Eléctrico / Tablero (opcional)</label>
+            <input type="text" id="outlets-notes" placeholder="Ej: Cambio de enchufe doble quemado en mesón de atención y reapriete de bornes..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500" />
+          </div>
+        </div>
+
+        <!-- 5. Equipos de Frío / Máquinas Ventus -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="p-2 rounded-lg bg-sky-500/10 text-sky-400">
+                <i data-lucide="snowflake" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-base">5. Limpieza y Mantención de Máquinas Ventus</h3>
+                <p class="text-xs text-slate-400">Agrega cada equipo Ventus intervenido en el local</p>
+              </div>
+            </div>
+            <button type="button" onclick="addVentusMachine()" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Agregar Máquina Ventus
+            </button>
+          </div>
+
+          <div id="ventus-list" class="space-y-3"></div>
+          <div id="ventus-empty" class="text-center py-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+            No hay máquinas Ventus agregadas en esta visita. Presiona "Agregar Máquina Ventus" si realizaste limpieza o revisión.
+          </div>
+        </div>
+
+        <!-- 6. Extintores y Seguridad -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+            <div class="p-2 rounded-lg bg-rose-500/10 text-rose-400">
+              <i data-lucide="flame-kindling" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-white text-base">6. Revisión de Extintores</h3>
+              <p class="text-xs text-slate-400">Control de vigencia, recambio en visita o alerta de vencimiento</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Estado de Extintores</label>
+              <select id="ext-status" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500">
+                <option value="Vigentes y con carga al día">Vigentes y con carga al día</option>
+                <option value="Cambiados / Recargados en visita">Cambiados / Recargados en visita</option>
+                <option value="Requiere cambio urgente (Vencido/Descargado)">Requiere cambio urgente (Vencido/Descargado)</option>
+                <option value="No revisado en esta visita">No revisado en esta visita</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Cantidad Revisada / Cambiada</label>
+              <input type="number" id="ext-qty" min="0" value="0" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación de Extintores</label>
+              <input type="text" id="ext-notes" placeholder="Ej: Se dejó extintor PQS 6kg nuevo en bodega..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Detalles Pendientes / Próxima Visita -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="p-2 rounded-lg bg-orange-500/10 text-orange-400">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-base">7. Detalles Pendientes y Levantamiento</h3>
+                <p class="text-xs text-slate-400">Trabajos faltantes, repuestos requeridos o reparaciones pendientes para próxima visita</p>
+              </div>
+            </div>
+            <button type="button" onclick="addPendingItem()" class="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Agregar Pendiente
+            </button>
+          </div>
+
+          <div id="pending-list" class="space-y-3"></div>
+          <div id="pending-empty" class="text-center py-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+            Sin pendientes registrados. Si detectaste algo que falta reparar o traer en la próxima visita, agrégalo aquí.
+          </div>
+        </div>
+
+        <!-- 8. Evidencia Fotográfica -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-white text-base">8. Evidencia Fotográfica (Antes / Después / Hallazgo)</h3>
+                <p class="text-xs text-slate-400">Las fotos se optimizan automáticamente para incluirse en el PDF y respaldo</p>
+              </div>
+            </div>
+            <label class="cursor-pointer px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i data-lucide="image-plus" class="w-4 h-4"></i>
+              <span>Subir / Tomar Fotos</span>
+              <input type="file" id="photo-input" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(event)" />
+            </label>
+          </div>
+
+          <div id="photos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          <div id="photos-empty" class="text-center py-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+            No hay fotos adjuntas aún. Puedes subir fotos del antes, después o de algún detalle pendiente.
+          </div>
+        </div>
+
+        <!-- 9. Recepción Conforme en Local -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <i data-lucide="user-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-white text-base">9. Recepción del Trabajo en Local</h3>
+              <p class="text-xs text-slate-400">Registro y firma de quien recibe la mantención en tienda</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1.5">Nombre de Quien Recibe *</label>
+                <input type="text" id="rec-name" required placeholder="Ej: Camila Soto" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1.5">Cargo / Rol</label>
+                <select id="rec-role" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                  <option value="Jefe(a) de Tienda">Jefe(a) de Tienda</option>
+                  <option value="Encargado(a) de Turno">Encargado(a) de Turno</option>
+                  <option value="Asesor Local">Asesor Local</option>
+                  <option value="Supervisor(a) Zonal">Supervisor(a) Zonal</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1.5">Observación de Recepción</label>
+                <input type="text" id="rec-notes" value="Conforme con los trabajos realizados en tienda." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+              </div>
+            </div>
+
+            <!-- Firma Táctil -->
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-medium text-slate-300">Firma Digital de Recepción (saldrá en PDF y WhatsApp)</label>
+                <button type="button" onclick="clearSignature()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1">
+                  <i data-lucide="eraser" class="w-3.5 h-3.5"></i> Borrar firma
+                </button>
+              </div>
+              <div class="relative flex-1 min-h-[150px] bg-white rounded-xl border-2 border-dashed border-slate-600 overflow-hidden">
+                <canvas id="signature-pad" class="w-full h-full touch-none cursor-crosshair block"></canvas>
+                <span id="signature-placeholder" class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-400 font-medium">
+                  Firme aquí con el dedo o mouse
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Bar -->
+        <div class="sticky bottom-4 z-20 bg-obsidian-900/95 backdrop-blur border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl">
+          <div class="text-xs text-slate-400">
+            Al guardar, el local queda respaldado automáticamente y se abre el <strong class="text-white">Informe Técnico</strong> listo para PDF o WhatsApp.
+          </div>
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-900/40 transition-all">
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span id="submit-btn-text">Guardar Visita y Generar Informe</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ==================== VIEW 2: HISTORIAL DE VISITAS ==================== -->
+    <section id="view-history" class="hidden space-y-6">
+      <!-- KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5">
+          <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+            <i data-lucide="clipboard-check" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Visitas Registradas</div>
+            <div id="kpi-visits" class="text-2xl font-bold text-white">0</div>
+          </div>
+        </div>
+
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5">
+          <div class="p-3 rounded-xl bg-cyan-500/10 text-cyan-400">
+            <i data-lucide="store" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Locales Guardados</div>
+            <div id="kpi-stores" class="text-2xl font-bold text-white">0</div>
+          </div>
+        </div>
+
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5">
+          <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400">
+            <i data-lucide="lightbulb" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Luminarias / Tubos</div>
+            <div id="kpi-lights" class="text-2xl font-bold text-white">0</div>
+          </div>
+        </div>
+
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5">
+          <div class="p-3 rounded-xl bg-orange-500/10 text-orange-400">
+            <i data-lucide="alert-circle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Con Pendientes</div>
+            <div id="kpi-pendings" class="text-2xl font-bold text-white">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen Acumulado de Insumos -->
+      <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4">
+        <button type="button" onclick="toggleStockSummary()" class="w-full flex items-center justify-between text-left">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 text-cyan-400"></i>
+            <span class="font-semibold text-sm text-white">Resumen Acumulado de Materiales Utilizados (Total Histórico)</span>
+          </div>
+          <i id="stock-chevron" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+        </button>
+        <div id="stock-summary-panel" class="hidden mt-4 pt-4 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"></div>
+      </div>
+
+      <!-- Buscador y Filtros -->
+      <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex flex-col md:flex-row gap-3">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="text" id="history-search" oninput="renderHistory()" placeholder="Buscar por local, fecha, material usado (ej: tubo 120, ventus, enchufe doble), asesor o pendiente..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+          </div>
+          <select id="history-store-filter" onchange="renderHistory()" class="bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="ALL">Todos los locales guardados</option>
+          </select>
+          <select id="history-filter" onchange="renderHistory()" class="bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="ALL">Todos los estados</option>
+            <option value="PENDING">Solo con pendientes</option>
+            <option value="OPERATIONAL">100% Operativos</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Lista de Visitas -->
+      <div id="history-list" class="space-y-4"></div>
+    </section>
+
+    <!-- ==================== VIEW 3: GENERADOR DE INFORME PERSONALIZABLE ==================== -->
+    <section id="view-report" class="hidden space-y-6">
+      <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Visita a reportar:</label>
+          <select id="report-visit-selector" onchange="loadReportVisit(this.value)" class="bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 min-w-[270px]"></select>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button type="button" onclick="sendDirectWhatsApp()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-lg shadow-emerald-950/50">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            Enviar directo a WhatsApp
+          </button>
+          <button type="button" onclick="copyWhatsAppReport()" class="px-3.5 py-2.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+            <i data-lucide="copy" class="w-4 h-4 text-emerald-400"></i>
+            Copiar Texto
+          </button>
+          <button type="button" onclick="downloadDirectPDF()" id="btn-download-pdf" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-lg shadow-blue-950/50">
+            <i data-lucide="file-down" class="w-4 h-4"></i>
+            Descargar PDF
+          </button>
+          <button type="button" onclick="window.print()" class="px-3.5 py-2.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors" title="Imprimir">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Panel Izquierdo: Tachar / Incluir Qué Va en el Informe -->
+        <div class="lg:col-span-4 bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4 no-print">
+          <div class="border-b border-slate-800 pb-3">
+            <h3 class="font-semibold text-white text-sm flex items-center gap-2">
+              <i data-lucide="list-checks" class="w-4 h-4 text-cyan-400"></i>
+              Personalizar Informe (Tachar / Incluir)
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Destilda cualquier sección o ítem que no quieras mostrar en el PDF ni en WhatsApp.</p>
+          </div>
+
+          <div id="report-toggles-container" class="space-y-3 max-h-[65vh] overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Panel Derecho: Vista Previa Hoja Blanca Formal -->
+        <div class="lg:col-span-8">
+          <div id="report-print-sheet" class="bg-white text-slate-900 rounded-2xl shadow-2xl p-6 sm:p-10 space-y-6 border border-slate-200">
+            <!-- Renderizado dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL: RESPALDO Y LOCALES GUARDADOS ==================== -->
+  <div id="backup-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+    <div class="bg-obsidian-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="database-backup" class="w-5 h-5 text-cyan-400"></i>
+          <h3 class="font-bold text-white text-base">Respaldo Automático y Locales Guardados</h3>
+        </div>
+        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Tus visitas, fotos, firmas y locales ingresados se respaldan automáticamente en este navegador. También puedes exportar una copia de seguridad completa en archivo o restaurarla en otro dispositivo.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button type="button" onclick="exportFullBackup()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Descargar Respaldo (.json)
+          </button>
+          <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="upload" class="w-4 h-4 text-cyan-400"></i>
+            Restaurar Respaldo (.json)
+            <input type="file" accept=".json" class="hidden" onchange="importFullBackup(event)" />
+          </label>
+        </div>
+      </div>
+
+      <div class="space-y-2 border-t border-slate-800 pt-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-200">Locales Guardados Automáticamente</span>
+          <span id="modal-stores-count" class="text-[11px] text-cyan-400">0 locales</span>
+        </div>
+        <div id="modal-stores-list" class="max-h-48 overflow-y-auto space-y-1.5 pr-1"></div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeBackupModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CATALOG DEFINITIONS ====================
+    const LIGHTING_CATALOG = [
+      { id: 'panel_18_emb', name: 'Panel LED 18W Embutido', unit: 'unid.', placeholder: 'Sector (ej: Sala ventas)' },
+      { id: 'panel_18_sob', name: 'Panel LED 18W Sobrepuesto', unit: 'unid.', placeholder: 'Sector (ej: Bodega)' },
+      { id: 'panel_24_emb', name: 'Panel LED 24W Embutido', unit: 'unid.', placeholder: 'Sector (ej: Pasillo central)' },
+      { id: 'panel_24_sob', name: 'Panel LED 24W Sobrepuesto', unit: 'unid.', placeholder: 'Sector (ej: Trastienda)' },
+      { id: 'dicroico_6w', name: 'Dicroico LED 6W', unit: 'unid.', placeholder: 'Sector (ej: Vitrina / Exhibidor)' },
+      { id: 'dicroico_9w', name: 'Dicroico LED 9W', unit: 'unid.', placeholder: 'Sector (ej: Acceso / Cajas)' },
+      { id: 'tubo_t5_60', name: 'Tubo LED T5 — 60 cm', unit: 'unid.', placeholder: 'Sector / Mueble' },
+      { id: 'tubo_t5_90', name: 'Tubo LED T5 — 90 cm', unit: 'unid.', placeholder: 'Sector / Mueble' },
+      { id: 'tubo_t5_120', name: 'Tubo LED T5 — 120 cm', unit: 'unid.', placeholder: 'Sector / Gónodola' },
+      { id: 'cinta_led', name: 'Cinta LED Interior', unit: 'mts', placeholder: 'Sector (ej: Cenefa / Mueble)' },
+      { id: 'fuente_poder', name: 'Fuente de Poder / Driver LED', unit: 'unid.', placeholder: 'Detalle (ej: 12V 5A)' }
+    ];
+
+    const OUTLETS_CATALOG = [
+      { id: 'enchufe_simple', name: 'Enchufe Simple', defaultMount: 'Empotrado' },
+      { id: 'enchufe_doble', name: 'Enchufe Doble', defaultMount: 'Empotrado' },
+      { id: 'enchufe_triple', name: 'Enchufe Triple', defaultMount: 'Sobrepuesto' },
+      { id: 'enchufe_macho', name: 'Enchufe Macho (Volante)', defaultMount: 'Volante' }
+    ];
+
+    const STORAGE_KEY = 'MantencionProEDX_Visits_v2';
+    const STORES_KEY = 'MantencionProEDX_Stores_v2';
+
+    // ==================== STATE ====================
+    let visits = [];
+    let savedStores = [];
+    let ventusItems = [];
+    let pendingItems = [];
+    let photoItems = [];
+    let currentReportId = null;
+    let reportVisibility = {};
+
+    // Signature Pad state
+    let sigCanvas, sigCtx, isDrawing = false, hasSignature = false;
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('visit-date').value = new Date().toISOString().split('T')[0];
+      renderLightingCatalog();
+      renderOutletsCatalog();
+      initSignaturePad();
+      loadStores();
+      loadVisits();
+      lucide.createIcons();
+    });
+
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      const colors = type === 'error'
+        ? 'bg-rose-950/95 border-rose-500/50 text-rose-100'
+        : 'bg-obsidian-850/95 border-cyan-500/50 text-white';
+      el.className = `pointer-events-auto border ${colors} px-4 py-3 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2.5 transition-all transform translate-y-2 opacity-0`;
+      el.innerHTML = `<span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-rose-400' : 'bg-cyan-400'}"></span><span>${msg}</span>`;
+      container.appendChild(el);
+      requestAnimationFrame(() => {
+        el.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => el.remove(), 300);
+      }, 3200);
+    }
+
+    function flashAutosave() {
+      const badge = document.getElementById('autosave-badge');
+      badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span> Respaldado ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+      setTimeout(() => {
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Autoguardado activo`;
+      }, 2500);
+    }
+
+    // ==================== STORES AUTO-MEMORY ====================
+    function loadStores() {
+      const raw = localStorage.getItem(STORES_KEY);
+      savedStores = raw ? JSON.parse(raw) : [];
+      syncStoresUI();
+    }
+
+    function registerStoreAuto(storeName) {
+      const clean = storeName.trim();
+      if (!clean) return;
+      const existingIdx = savedStores.findIndex(s => s.toLowerCase() === clean.toLowerCase());
+      if (existingIdx !== -1) {
+        savedStores.splice(existingIdx, 1);
+      }
+      savedStores.unshift(clean);
+      localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+      syncStoresUI();
+      flashAutosave();
+    }
+
+    function deleteSavedStore(storeName) {
+      savedStores = savedStores.filter(s => s !== storeName);
+      localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+      syncStoresUI();
+      renderBackupModalStores();
+      showToast('Local eliminado de sugerencias');
+    }
+
+    function selectStoreChip(name) {
+      document.getElementById('visit-store').value = name;
+    }
+
+    function syncStoresUI() {
+      const datalist = document.getElementById('stores-datalist');
+      datalist.innerHTML = savedStores.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
+
+      document.getElementById('saved-stores-hint').textContent = `${savedStores.length} local(es) en memoria`;
+
+      const chips = document.getElementById('recent-stores-chips');
+      if (savedStores.length > 0) {
+        chips.innerHTML = `<span class="text-[11px] text-slate-500 self-center mr-1">Recientes:</span>` +
+          savedStores.slice(0, 5).map(s => `
+            <button type="button" onclick="selectStoreChip('${escapeHtml(s).replace(/'/g, "\\'")}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-obsidian-950 hover:bg-blue-600/20 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/40 transition-colors">
+              ${escapeHtml(s)}
+            </button>
+          `).join('');
+      } else {
+        chips.innerHTML = '';
+      }
+
+      // Sync history store filter
+      const filterSelect = document.getElementById('history-store-filter');
+      if (filterSelect) {
+        const currentVal = filterSelect.value;
+        filterSelect.innerHTML = `<option value="ALL">Todos los locales guardados (${savedStores.length})</option>` +
+          savedStores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+        filterSelect.value = savedStores.includes(currentVal) ? currentVal : 'ALL';
+      }
+    }
+
+    // ==================== NAVIGATION ====================
+    function switchView(view) {
+      ['form', 'history', 'report'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
+        const tab = document.getElementById(`tab-${v}`);
+        if (v === view) {
+          tab.className = 'flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white shadow';
+        } else {
+          tab.className = 'flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-obsidian-800';
+        }
+      });
+
+      if (view === 'history') renderHistory();
+      if (view === 'report') {
+        populateReportSelector();
+        if (currentReportId) loadReportVisit(currentReportId);
+        else if (visits.length > 0) loadReportVisit(visits[0].id);
+      }
+      lucide.createIcons();
+    }
+
+    // ==================== CATALOG RENDERING ====================
+    function renderLightingCatalog() {
+      const grid = document.getElementById('lighting-catalog-grid');
+      grid.innerHTML = LIGHTING_CATALOG.map(item => `
+        <div id="card-${item.id}" class="bg-obsidian-950 border border-slate-800 rounded-xl p-3.5 transition-all space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <div class="text-sm font-medium text-slate-200">${item.name}</div>
+              <div class="text-[11px] text-slate-500">Unidad: ${item.unit}</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="adjustCatalogQty('${item.id}', -1, 'lighting')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors">-</button>
+              <input type="number" id="qty-${item.id}" value="0" min="0" oninput="onCatalogQtyInput('${item.id}', 'lighting')" class="w-12 text-center bg-obsidian-900 border border-slate-700 rounded-lg py-1 text-sm font-semibold text-white" />
+              <button type="button" onclick="adjustCatalogQty('${item.id}', 1, 'lighting')" class="w-8 h-8 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold transition-colors">+</button>
+            </div>
+          </div>
+          <input type="text" id="loc-${item.id}" placeholder="${item.placeholder}" class="w-full bg-obsidian-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+        </div>
+      `).join('');
+    }
+
+    function renderOutletsCatalog() {
+      const grid = document.getElementById('outlets-catalog-grid');
+      grid.innerHTML = OUTLETS_CATALOG.map(item => `
+        <div id="card-${item.id}" class="bg-obsidian-950 border border-slate-800 rounded-xl p-3.5 transition-all space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-sm font-medium text-slate-200">${item.name}</div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="adjustCatalogQty('${item.id}', -1, 'outlets')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors">-</button>
+              <input type="number" id="qty-${item.id}" value="0" min="0" oninput="onCatalogQtyInput('${item.id}', 'outlets')" class="w-12 text-center bg-obsidian-900 border border-slate-700 rounded-lg py-1 text-sm font-semibold text-white" />
+              <button type="button" onclick="adjustCatalogQty('${item.id}', 1, 'outlets')" class="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors">+</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="mount-${item.id}" class="bg-obsidian-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
+              <option value="Empotrado" ${item.defaultMount === 'Empotrado' ? 'selected' : ''}>Empotrado</option>
+              <option value="Sobrepuesto" ${item.defaultMount === 'Sobrepuesto' ? 'selected' : ''}>Sobrepuesto</option>
+              <option value="Volante" ${item.defaultMount === 'Volante' ? 'selected' : ''}>Volante / Aéreo</option>
+            </select>
+            <input type="text" id="loc-${item.id}" placeholder="Sector (ej: Caja 1)" class="bg-obsidian-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500" />
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function adjustCatalogQty(id, delta, group) {
+      const input = document.getElementById(`qty-${id}`);
+      const next = Math.max(0, (parseInt(input.value, 10) || 0) + delta);
+      input.value = next;
+      onCatalogQtyInput(id, group);
+    }
+
+    function onCatalogQtyInput(id, group) {
+      const input = document.getElementById(`qty-${id}`);
+      const val = Math.max(0, parseInt(input.value, 10) || 0);
+      const card = document.getElementById(`card-${id}`);
+      if (val > 0) {
+        card.classList.add(group === 'lighting' ? 'border-amber-500/60' : 'border-purple-500/60', 'bg-obsidian-900');
+      } else {
+        card.classList.remove('border-amber-500/60', 'border-purple-500/60', 'bg-obsidian-900');
+      }
+      updateCatalogBadges();
+    }
+
+    function adjustSimpleCounter(id, delta) {
+      const input = document.getElementById(id);
+      input.value = Math.max(0, (parseInt(input.value, 10) || 0) + delta);
+    }
+
+    function updateCatalogBadges() {
+      let lightSum = 0;
+      LIGHTING_CATALOG.forEach(item => {
+        lightSum += parseInt(document.getElementById(`qty-${item.id}`).value, 10) || 0;
+      });
+      document.getElementById('lighting-total-badge').textContent = `${lightSum} ítems usados`;
+
+      let outletSum = 0;
+      OUTLETS_CATALOG.forEach(item => {
+        outletSum += parseInt(document.getElementById(`qty-${item.id}`).value, 10) || 0;
+      });
+      document.getElementById('outlets-total-badge').textContent = `${outletSum} enchufes`;
+    }
+
+    // ==================== VENTUS MACHINES ====================
+    function addVentusMachine(data = null) {
+      const id = data?.id || 'v_' + Date.now() + Math.random().toString(36).slice(2, 6);
+      ventusItems.push({
+        id,
+        equipo: data?.equipo || '',
+        condensador: data ? data.condensador : true,
+        drenaje: data ? data.drenaje : true,
+        temperatura: data ? data.temperatura : true,
+        burletes: data ? data.burletes : false,
+        notas: data?.notas || ''
+      });
+      renderVentusList();
+    }
+
+    function removeVentusMachine(id) {
+      ventusItems = ventusItems.filter(v => v.id !== id);
+      renderVentusList();
+    }
+
+    function updateVentusField(id, field, value) {
+      const item = ventusItems.find(v => v.id === id);
+      if (item) item[field] = value;
+    }
+
+    function renderVentusList() {
+      const container = document.getElementById('ventus-list');
+      const empty = document.getElementById('ventus-empty');
+      empty.classList.toggle('hidden', ventusItems.length > 0);
+
+      container.innerHTML = ventusItems.map((item, idx) => `
+        <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Máquina Ventus #${idx + 1}</span>
+            <button type="button" onclick="removeVentusMachine('${item.id}')" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Quitar
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input type="text" value="${escapeHtml(item.equipo)}" oninput="updateVentusField('${item.id}', 'equipo', this.value)" placeholder="Modelo / Ubicación (ej: Mural Lácteos Ventus VSP-150)" class="bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+            <input type="text" value="${escapeHtml(item.notas)}" oninput="updateVentusField('${item.id}', 'notas', this.value)" placeholder="Observación técnica (ej: Sopleteo condensador, temp 3.2°C)" class="bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+          </div>
+          <div class="flex flex-wrap gap-3 text-xs text-slate-300">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.condensador ? 'checked' : ''} onchange="updateVentusField('${item.id}', 'condensador', this.checked)" class="rounded bg-slate-800 border-slate-600 text-sky-500" />
+              Limpieza / sopleteo condensador
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.drenaje ? 'checked' : ''} onchange="updateVentusField('${item.id}', 'drenaje', this.checked)" class="rounded bg-slate-800 border-slate-600 text-sky-500" />
+              Limpieza bandeja y drenaje
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.temperatura ? 'checked' : ''} onchange="updateVentusField('${item.id}', 'temperatura', this.checked)" class="rounded bg-slate-800 border-slate-600 text-sky-500" />
+              Control de temperatura OK
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.burletes ? 'checked' : ''} onchange="updateVentusField('${item.id}', 'burletes', this.checked)" class="rounded bg-slate-800 border-slate-600 text-sky-500" />
+              Revisión burletes / gomas
+            </label>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // ==================== PENDING ITEMS ====================
+    function addPendingItem(data = null) {
+      const id = data?.id || 'p_' + Date.now() + Math.random().toString(36).slice(2, 6);
+      pendingItems.push({
+        id,
+        descripcion: data?.descripcion || '',
+        prioridad: data?.prioridad || 'Media',
+        material: data?.material || ''
+      });
+      renderPendingList();
+    }
+
+    function removePendingItem(id) {
+      pendingItems = pendingItems.filter(p => p.id !== id);
+      renderPendingList();
+    }
+
+    function updatePendingField(id, field, value) {
+      const item = pendingItems.find(p => p.id === id);
+      if (item) item[field] = value;
+    }
+
+    function renderPendingList() {
+      const container = document.getElementById('pending-list');
+      const empty = document.getElementById('pending-empty');
+      empty.classList.toggle('hidden', pendingItems.length > 0);
+
+      container.innerHTML = pendingItems.map((item, idx) => `
+        <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Pendiente #${idx + 1}</span>
+            <button type="button" onclick="removePendingItem('${item.id}')" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Eliminar
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+            <input type="text" value="${escapeHtml(item.descripcion)}" oninput="updatePendingField('${item.id}', 'descripcion', this.value)" placeholder="Detalle faltante (ej: Cambiar burlete puerta derecha vitrina)" class="md:col-span-6 bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+            <input type="text" value="${escapeHtml(item.material)}" oninput="updatePendingField('${item.id}', 'material', this.value)" placeholder="Material necesario (ej: 1x Fuente 12V)" class="md:col-span-4 bg-obsidian-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+            <select onchange="updatePendingField('${item.id}', 'prioridad', this.value)" class="md:col-span-2 bg-obsidian-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
+              <option value="Alta" ${item.prioridad === 'Alta' ? 'selected' : ''}>Urgencia Alta</option>
+              <option value="Media" ${item.prioridad === 'Media' ? 'selected' : ''}>Urgencia Media</option>
+              <option value="Baja" ${item.prioridad === 'Baja' ? 'selected' : ''}>Urgencia Baja</option>
+            </select>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // ==================== PHOTOS WITH COMPRESSION ====================
+    async function handlePhotoUpload(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      for (const file of files) {
+        try {
+          const compressed = await compressImage(file, 900, 0.72);
+          photoItems.push({
+            id: 'ph_' + Date.now() + Math.random().toString(36).slice(2, 6),
+            dataUrl: compressed,
+            tag: 'Después',
+            caption: ''
+          });
+        } catch (err) {
+          showToast('No se pudo procesar una imagen', 'error');
+        }
+      }
+      event.target.value = '';
+      renderPhotosGrid();
+      showToast(`${files.length} foto(s) agregada(s)`);
+    }
+
+    function compressImage(file, maxWidth, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removePhoto(id) {
+      photoItems = photoItems.filter(p => p.id !== id);
+      renderPhotosGrid();
+    }
+
+    function updatePhotoField(id, field, value) {
+      const p = photoItems.find(x => x.id === id);
+      if (p) p[field] = value;
+    }
+
+    function renderPhotosGrid() {
+      const grid = document.getElementById('photos-grid');
+      const empty = document.getElementById('photos-empty');
+      empty.classList.toggle('hidden', photoItems.length > 0);
+
+      grid.innerHTML = photoItems.map(p => `
+        <div class="bg-obsidian-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+          <div class="relative h-40 bg-black">
+            <img src="${p.dataUrl}" alt="Evidencia" class="w-full h-full object-cover" />
+            <button type="button" onclick="removePhoto('${p.id}')" class="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white shadow">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div class="p-3 space-y-2">
+            <select onchange="updatePhotoField('${p.id}', 'tag', this.value)" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+              <option value="Antes" ${p.tag === 'Antes' ? 'selected' : ''}>Etiqueta: Antes</option>
+              <option value="Después" ${p.tag === 'Después' ? 'selected' : ''}>Etiqueta: Después (Terminado)</option>
+              <option value="Hallazgo / Pendiente" ${p.tag === 'Hallazgo / Pendiente' ? 'selected' : ''}>Etiqueta: Hallazgo / Pendiente</option>
+            </select>
+            <input type="text" value="${escapeHtml(p.caption)}" oninput="updatePhotoField('${p.id}', 'caption', this.value)" placeholder="Descripción breve de la foto..." class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500" />
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // ==================== SIGNATURE PAD ====================
+    function initSignaturePad() {
+      sigCanvas = document.getElementById('signature-pad');
+      sigCtx = sigCanvas.getContext('2d');
+
+      function resizeCanvas() {
+        const rect = sigCanvas.parentElement.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const temp = hasSignature ? sigCanvas.toDataURL() : null;
+        sigCanvas.width = rect.width;
+        sigCanvas.height = rect.height;
+        sigCtx.lineWidth = 2.4;
+        sigCtx.lineCap = 'round';
+        sigCtx.strokeStyle = '#0f172a';
+        if (temp) {
+          const img = new Image();
+          img.onload = () => sigCtx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height);
+          img.src = temp;
+        }
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      setTimeout(resizeCanvas, 100);
+
+      const getPos = (e) => {
+        const rect = sigCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      };
+
+      const startDraw = (e) => {
+        isDrawing = true;
+        hasSignature = true;
+        document.getElementById('signature-placeholder').classList.add('hidden');
+        const pos = getPos(e);
+        sigCtx.beginPath();
+        sigCtx.moveTo(pos.x, pos.y);
+      };
+
+      const draw = (e) => {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        sigCtx.lineTo(pos.x, pos.y);
+        sigCtx.stroke();
+      };
+
+      const endDraw = () => { isDrawing = false; };
+
+      sigCanvas.addEventListener('mousedown', startDraw);
+      sigCanvas.addEventListener('mousemove', draw);
+      window.addEventListener('mouseup', endDraw);
+
+      sigCanvas.addEventListener('touchstart', startDraw, { passive: false });
+      sigCanvas.addEventListener('touchmove', draw, { passive: false });
+      sigCanvas.addEventListener('touchend', endDraw);
+    }
+
+    function clearSignature() {
+      if (!sigCanvas) return;
+      sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+      hasSignature = false;
+      document.getElementById('signature-placeholder').classList.remove('hidden');
+    }
+
+    function loadSignatureImage(dataUrl) {
+      clearSignature();
+      if (!dataUrl) return;
+      const rect = sigCanvas.parentElement.getBoundingClientRect();
+      if (rect.width > 0) {
+        sigCanvas.width = rect.width;
+        sigCanvas.height = rect.height;
+      }
+      sigCtx.lineWidth = 2.4;
+      sigCtx.lineCap = 'round';
+      sigCtx.strokeStyle = '#0f172a';
+      const img = new Image();
+      img.onload = () => {
+        sigCtx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height);
+        hasSignature = true;
+        document.getElementById('signature-placeholder').classList.add('hidden');
+      };
+      img.src = dataUrl;
+    }
+
+    // ==================== SAVE / LOAD / EDIT VISITS ====================
+    function loadVisits() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        visits = JSON.parse(raw);
+      } else {
+        visits = [
+          {
+            id: 'edx_demo_1',
+            store: 'Local 104 - La Florida',
+            date: new Date().toISOString().split('T')[0],
+            savedAt: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+            type: 'Mantención Preventiva',
+            tech: 'Eduardo Aravena — Área Mantención EDX',
+            status: 'Operativo con Observaciones',
+            lighting: [
+              { id: 'panel_18_emb', name: 'Panel LED 18W Embutido', unit: 'unid.', qty: 4, location: 'Sala de ventas pasillo 1' },
+              { id: 'tubo_t5_120', name: 'Tubo LED T5 — 120 cm', unit: 'unid.', qty: 3, location: 'Góndola lácteos' },
+              { id: 'fuente_poder', name: 'Fuente de Poder / Driver LED', unit: 'unid.', qty: 1, location: 'Cenefa línea de cajas (12V 5A)' }
+            ],
+            lightingNotes: 'Se normalizó iluminación en sala de ventas y cenefa principal.',
+            caluga: {
+              status: 'Reparada y Encendida',
+              cinta: 3,
+              trafo: 1,
+              notes: 'Reemplazo de transformador exterior quemado y tramo de cinta LED.'
+            },
+            outlets: [
+              { id: 'enchufe_doble', name: 'Enchufe Doble', qty: 2, mount: 'Empotrado', location: 'Mesón de atención y Caja 2' }
+            ],
+            outletsNotes: 'Se cambiaron módulos con falso contacto.',
+            ventus: [
+              {
+                id: 'v1',
+                equipo: 'Mural Lácteos Ventus VSP-150',
+                condensador: true,
+                drenaje: true,
+                temperatura: true,
+                burletes: false,
+                notas: 'Sopleteo de condensador y destape de desagüe. Temperatura estable en 3.4°C.'
+              }
+            ],
+            extinguishers: {
+              status: 'Vigentes y con carga al día',
+              qty: 4,
+              notes: 'Manómetros en verde y señalética despejada.'
+            },
+            pendings: [
+              { id: 'p1', descripcion: 'Cambiar burlete magnético puerta derecha conservadora', prioridad: 'Media', material: '1x Burlete Ventus' }
+            ],
+            photos: [],
+            reception: {
+              name: 'Camila Soto',
+              role: 'Asesor Local',
+              notes: 'Conforme con los trabajos realizados en tienda.',
+              signature: null
+            }
+          }
+        ];
+        persistVisits();
+        registerStoreAuto('Local 104 - La Florida');
+      }
+      updateHistoryBadge();
+    }
+
+    function persistVisits() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+      updateHistoryBadge();
+      flashAutosave();
+    }
+
+    function updateHistoryBadge() {
+      document.getElementById('history-count-badge').textContent = visits.length;
+    }
+
+    function saveVisit(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editing-id').value;
+      const storeName = document.getElementById('visit-store').value.trim();
+
+      if (!storeName) {
+        showToast('Ingresa el nombre o código del local', 'error');
+        return;
+      }
+
+      // Guardar automáticamente el local ingresado manualmente
+      registerStoreAuto(storeName);
+
+      const lighting = LIGHTING_CATALOG.map(item => ({
+        id: item.id,
+        name: item.name,
+        unit: item.unit,
+        qty: parseInt(document.getElementById(`qty-${item.id}`).value, 10) || 0,
+        location: document.getElementById(`loc-${item.id}`).value.trim()
+      })).filter(x => x.qty > 0);
+
+      const outlets = OUTLETS_CATALOG.map(item => ({
+        id: item.id,
+        name: item.name,
+        qty: parseInt(document.getElementById(`qty-${item.id}`).value, 10) || 0,
+        mount: document.getElementById(`mount-${item.id}`).value,
+        location: document.getElementById(`loc-${item.id}`).value.trim()
+      })).filter(x => x.qty > 0);
+
+      const cleanVentus = ventusItems.filter(v => v.equipo.trim() || v.notas.trim());
+      const cleanPendings = pendingItems.filter(p => p.descripcion.trim());
+
+      const visitObj = {
+        id: editingId || 'edx_' + Date.now(),
+        store: storeName,
+        date: document.getElementById('visit-date').value,
+        savedAt: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+        type: document.getElementById('visit-type').value,
+        tech: document.getElementById('visit-tech').value.trim(),
+        status: document.getElementById('visit-status').value,
+        lighting,
+        lightingNotes: document.getElementById('lighting-notes').value.trim(),
+        caluga: {
+          status: document.getElementById('caluga-status').value,
+          cinta: parseInt(document.getElementById('caluga-cinta').value, 10) || 0,
+          trafo: parseInt(document.getElementById('caluga-trafo').value, 10) || 0,
+          notes: document.getElementById('caluga-notes').value.trim()
+        },
+        outlets,
+        outletsNotes: document.getElementById('outlets-notes').value.trim(),
+        ventus: cleanVentus,
+        extinguishers: {
+          status: document.getElementById('ext-status').value,
+          qty: parseInt(document.getElementById('ext-qty').value, 10) || 0,
+          notes: document.getElementById('ext-notes').value.trim()
+        },
+        pendings: cleanPendings,
+        photos: [...photoItems],
+        reception: {
+          name: document.getElementById('rec-name').value.trim(),
+          role: document.getElementById('rec-role').value,
+          notes: document.getElementById('rec-notes').value.trim(),
+          signature: hasSignature ? sigCanvas.toDataURL('image/png') : null
+        }
+      };
+
+      if (editingId) {
+        const idx = visits.findIndex(v => v.id === editingId);
+        if (idx !== -1) visits[idx] = visitObj;
+        showToast('Visita actualizada y respaldada');
+      } else {
+        visits.unshift(visitObj);
+        showToast('Visita guardada y local respaldado automáticamente');
+      }
+
+      persistVisits();
+      currentReportId = visitObj.id;
+      resetForm(false);
+      switchView('report');
+    }
+
+    function resetForm(notify = true) {
+      document.getElementById('visit-form').reset();
+      document.getElementById('editing-id').value = '';
+      document.getElementById('form-mode-title').textContent = 'Registro de Visita de Mantención';
+      document.getElementById('submit-btn-text').textContent = 'Guardar Visita y Generar Informe';
+      document.getElementById('visit-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('visit-tech').value = 'Eduardo Aravena — Área Mantención EDX';
+      document.getElementById('rec-notes').value = 'Conforme con los trabajos realizados en tienda.';
+
+      LIGHTING_CATALOG.forEach(item => {
+        document.getElementById(`qty-${item.id}`).value = 0;
+        document.getElementById(`loc-${item.id}`).value = '';
+        document.getElementById(`card-${item.id}`).classList.remove('border-amber-500/60', 'bg-obsidian-900');
+      });
+      OUTLETS_CATALOG.forEach(item => {
+        document.getElementById(`qty-${item.id}`).value = 0;
+        document.getElementById(`loc-${item.id}`).value = '';
+        document.getElementById(`card-${item.id}`).classList.remove('border-purple-500/60', 'bg-obsidian-900');
+      });
+
+      ventusItems = [];
+      pendingItems = [];
+      photoItems = [];
+      renderVentusList();
+      renderPendingList();
+      renderPhotosGrid();
+      clearSignature();
+      updateCatalogBadges();
+      if (notify) showToast('Formulario limpio');
+    }
+
+    function editVisit(id) {
+      const v = visits.find(x => x.id === id);
+      if (!v) return;
+
+      resetForm(false);
+      document.getElementById('editing-id').value = v.id;
+      document.getElementById('form-mode-title').textContent = `Editando Visita — ${v.store}`;
+      document.getElementById('submit-btn-text').textContent = 'Actualizar Visita y Ver Informe';
+
+      document.getElementById('visit-store').value = v.store;
+      document.getElementById('visit-date').value = v.date;
+      document.getElementById('visit-type').value = v.type;
+      document.getElementById('visit-tech').value = v.tech;
+      document.getElementById('visit-status').value = v.status;
+
+      (v.lighting || []).forEach(item => {
+        const qtyEl = document.getElementById(`qty-${item.id}`);
+        if (qtyEl) {
+          qtyEl.value = item.qty;
+          document.getElementById(`loc-${item.id}`).value = item.location || '';
+          onCatalogQtyInput(item.id, 'lighting');
+        }
+      });
+      document.getElementById('lighting-notes').value = v.lightingNotes || '';
+
+      document.getElementById('caluga-status').value = v.caluga?.status || 'Sin intervención / Operativa';
+      document.getElementById('caluga-cinta').value = v.caluga?.cinta || 0;
+      document.getElementById('caluga-trafo').value = v.caluga?.trafo || 0;
+      document.getElementById('caluga-notes').value = v.caluga?.notes || '';
+
+      (v.outlets || []).forEach(item => {
+        const qtyEl = document.getElementById(`qty-${item.id}`);
+        if (qtyEl) {
+          qtyEl.value = item.qty;
+          document.getElementById(`mount-${item.id}`).value = item.mount || 'Empotrado';
+          document.getElementById(`loc-${item.id}`).value = item.location || '';
+          onCatalogQtyInput(item.id, 'outlets');
+        }
+      });
+      document.getElementById('outlets-notes').value = v.outletsNotes || '';
+
+      ventusItems = JSON.parse(JSON.stringify(v.ventus || []));
+      pendingItems = JSON.parse(JSON.stringify(v.pendings || []));
+      photoItems = JSON.parse(JSON.stringify(v.photos || []));
+      renderVentusList();
+      renderPendingList();
+      renderPhotosGrid();
+
+      document.getElementById('ext-status').value = v.extinguishers?.status || 'Vigentes y con carga al día';
+      document.getElementById('ext-qty').value = v.extinguishers?.qty || 0;
+      document.getElementById('ext-notes').value = v.extinguishers?.notes || '';
+
+      document.getElementById('rec-name').value = v.reception?.name || '';
+      document.getElementById('rec-role').value = v.reception?.role || 'Asesor Local';
+      document.getElementById('rec-notes').value = v.reception?.notes || '';
+
+      switchView('form');
+      setTimeout(() => loadSignatureImage(v.reception?.signature || null), 120);
+    }
+
+    function deleteVisit(id) {
+      if (!confirm('¿Eliminar este registro de mantención del historial?')) return;
+      visits = visits.filter(v => v.id !== id);
+      persistVisits();
+      renderHistory();
+      showToast('Registro eliminado');
+    }
+
+    function openReportFor(id) {
+      currentReportId = id;
+      switchView('report');
+    }
+
+    // ==================== HISTORY & SEARCH & DETAIL ====================
+    function toggleStockSummary() {
+      const panel = document.getElementById('stock-summary-panel');
+      const chev = document.getElementById('stock-chevron');
+      panel.classList.toggle('hidden');
+      chev.classList.toggle('rotate-180');
+    }
+
+    function toggleVisitDetails(id) {
+      const box = document.getElementById(`detail-box-${id}`);
+      const label = document.getElementById(`detail-btn-text-${id}`);
+      if (!box) return;
+      const isHidden = box.classList.contains('hidden');
+      box.classList.toggle('hidden');
+      if (label) label.textContent = isHidden ? 'Ocultar detalle' : 'Ver qué se hizo';
+    }
+
+    function renderHistory() {
+      const totalVisits = visits.length;
+      const totalLights = visits.reduce((acc, v) => acc + (v.lighting || []).reduce((s, i) => s + i.qty, 0), 0);
+      const withPendings = visits.filter(v => (v.pendings || []).length > 0).length;
+
+      document.getElementById('kpi-visits').textContent = totalVisits;
+      document.getElementById('kpi-stores').textContent = savedStores.length;
+      document.getElementById('kpi-lights').textContent = totalLights;
+      document.getElementById('kpi-pendings').textContent = withPendings;
+
+      // Acumulado de insumos
+      const totalsMap = {};
+      LIGHTING_CATALOG.forEach(c => totalsMap[c.name] = 0);
+      OUTLETS_CATALOG.forEach(c => totalsMap[c.name] = 0);
+      totalsMap['Cinta LED Caluga (mts)'] = 0;
+      totalsMap['Transformador Caluga'] = 0;
+
+      visits.forEach(v => {
+        (v.lighting || []).forEach(i => { totalsMap[i.name] = (totalsMap[i.name] || 0) + i.qty; });
+        (v.outlets || []).forEach(i => { totalsMap[i.name] = (totalsMap[i.name] || 0) + i.qty; });
+        totalsMap['Cinta LED Caluga (mts)'] += (v.caluga?.cinta || 0);
+        totalsMap['Transformador Caluga'] += (v.caluga?.trafo || 0);
+      });
+
+      document.getElementById('stock-summary-panel').innerHTML = Object.entries(totalsMap).map(([name, qty]) => `
+        <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+          <span class="text-xs text-slate-300 truncate pr-2">${name}</span>
+          <span class="text-sm font-bold ${qty > 0 ? 'text-cyan-400' : 'text-slate-600'}">${qty}</span>
+        </div>
+      `).join('');
+
+      // Filtros y búsqueda profunda (incluye materiales, observaciones, asesor, pendientes)
+      const q = (document.getElementById('history-search').value || '').toLowerCase().trim();
+      const storeFilter = document.getElementById('history-store-filter').value;
+      const filter = document.getElementById('history-filter').value;
+
+      const filtered = visits.filter(v => {
+        if (storeFilter !== 'ALL' && v.store !== storeFilter) return false;
+        if (filter === 'PENDING' && (!v.pendings || v.pendings.length === 0)) return false;
+        if (filter === 'OPERATIONAL' && v.status !== 'Local 100% Operativo') return false;
+        if (!q) return true;
+
+        const searchableBlob = [
+          v.store,
+          v.date,
+          v.type,
+          v.tech,
+          v.lightingNotes,
+          v.outletsNotes,
+          v.caluga?.status,
+          v.caluga?.notes,
+          v.reception?.name,
+          v.reception?.role,
+          ...(v.lighting || []).map(l => `${l.name} ${l.location}`),
+          ...(v.outlets || []).map(o => `${o.name} ${o.mount} ${o.location}`),
+          ...(v.ventus || []).map(m => `ventus ${m.equipo} ${m.notas}`),
+          ...(v.pendings || []).map(p => `${p.descripcion} ${p.material}`)
+        ].join(' ').toLowerCase();
+
+        return searchableBlob.includes(q);
+      });
+
+      const listEl = document.getElementById('history-list');
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-8 text-center text-sm text-slate-400">No se encontraron registros que coincidan con tu búsqueda.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(v => {
+        const statusColor = v.status === 'Local 100% Operativo'
+          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+          : v.status === 'Operativo con Observaciones'
+            ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+            : 'bg-rose-500/10 text-rose-300 border-rose-500/30';
+
+        const lightCount = (v.lighting || []).reduce((s, i) => s + i.qty, 0);
+        const outletCount = (v.outlets || []).reduce((s, i) => s + i.qty, 0);
+        const ventusCount = (v.ventus || []).length;
+        const pendCount = (v.pendings || []).length;
+
+        // Construir detalle completo desplegable de qué se hizo y cuándo
+        const lightingDetailHtml = (v.lighting || []).length > 0
+          ? `<ul class="space-y-1 text-xs text-slate-300">${v.lighting.map(l => `<li>• <strong class="text-white">${l.qty} ${l.unit}</strong> ${escapeHtml(l.name)} ${l.location ? `<span class="text-slate-400">(${escapeHtml(l.location)})</span>` : ''}</li>`).join('')}</ul>`
+          : `<p class="text-xs text-slate-500">Sin cambios de luminarias interiores.</p>`;
+
+        const outletsDetailHtml = (v.outlets || []).length > 0
+          ? `<ul class="space-y-1 text-xs text-slate-300">${v.outlets.map(o => `<li>• <strong class="text-white">${o.qty} unid.</strong> ${escapeHtml(o.name)} [${escapeHtml(o.mount)}] ${o.location ? `<span class="text-slate-400">(${escapeHtml(o.location)})</span>` : ''}</li>`).join('')}</ul>`
+          : `<p class="text-xs text-slate-500">Sin cambios de enchufes.</p>`;
+
+        const ventusDetailHtml = (v.ventus || []).length > 0
+          ? `<ul class="space-y-1 text-xs text-slate-300">${v.ventus.map(m => `<li>• <strong class="text-sky-300">${escapeHtml(m.equipo || 'Equipo Ventus')}</strong>: ${escapeHtml(m.notas || 'Mantención realizada')}</li>`).join('')}</ul>`
+          : `<p class="text-xs text-slate-500">Sin intervención en equipos Ventus.</p>`;
+
+        const pendDetailHtml = (v.pendings || []).length > 0
+          ? `<ul class="space-y-1 text-xs text-orange-300">${v.pendings.map(p => `<li>• [${escapeHtml(p.prioridad)}] ${escapeHtml(p.descripcion)} ${p.material ? `(Req: ${escapeHtml(p.material)})` : ''}</li>`).join('')}</ul>`
+          : `<p class="text-xs text-slate-500">Sin pendientes registrados.</p>`;
+
+        return `
+          <div class="bg-obsidian-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 sm:p-5 transition-all space-y-3">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div class="space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-base font-bold text-white">${escapeHtml(v.store)}</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full border ${statusColor}">${escapeHtml(v.status)}</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-medium">${formatDate(v.date)} ${v.savedAt ? '• ' + v.savedAt : ''}</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">${escapeHtml(v.type)}</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                  <span><strong class="text-slate-200">${lightCount}</strong> luminarias/tubos</span>
+                  <span><strong class="text-slate-200">${outletCount}</strong> enchufes</span>
+                  <span><strong class="text-slate-200">${ventusCount}</strong> máq. Ventus</span>
+                  <span>Caluga: <strong class="text-slate-200">${escapeHtml(v.caluga?.status || 'N/A')}</strong></span>
+                  <span class="${pendCount > 0 ? 'text-orange-400 font-semibold' : ''}"><strong>${pendCount}</strong> pendientes</span>
+                  <span>Recibió: <strong class="text-slate-200">${escapeHtml(v.reception?.name || 'N/A')}</strong> (${escapeHtml(v.reception?.role || '')})</span>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button type="button" onclick="toggleVisitDetails('${v.id}')" class="px-3 py-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span id="detail-btn-text-${v.id}">Ver qué se hizo</span>
+                </button>
+                <button type="button" onclick="openReportFor('${v.id}')" class="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                  Informe / PDF
+                </button>
+                <button type="button" onclick="editVisit('${v.id}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" title="Editar">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="deleteVisit('${v.id}')" class="p-2 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white transition-colors" title="Eliminar">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Detalle Desplegable de Qué se Hizo y Cuándo -->
+            <div id="detail-box-${v.id}" class="hidden pt-3 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="bg-obsidian-950 border border-slate-800/80 rounded-xl p-3 space-y-1.5">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Iluminación y Caluga</div>
+                ${lightingDetailHtml}
+                ${(v.caluga?.cinta > 0 || v.caluga?.trafo > 0 || v.caluga?.status !== 'Sin intervención / Operativa') ? `<div class="text-xs text-cyan-300 pt-1 border-t border-slate-800">Caluga: ${escapeHtml(v.caluga.status)} (Cinta: ${v.caluga.cinta}m, Trafo: ${v.caluga.trafo})</div>` : ''}
+              </div>
+
+              <div class="bg-obsidian-950 border border-slate-800/80 rounded-xl p-3 space-y-1.5">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-purple-400">Enchufes y Puntos</div>
+                ${outletsDetailHtml}
+                ${v.outletsNotes ? `<p class="text-[11px] text-slate-400 italic">${escapeHtml(v.outletsNotes)}</p>` : ''}
+              </div>
+
+              <div class="bg-obsidian-950 border border-slate-800/80 rounded-xl p-3 space-y-1.5">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-sky-400">Máquinas Ventus y Extintores</div>
+                ${ventusDetailHtml}
+                <div class="text-xs text-slate-300 pt-1 border-t border-slate-800">Extintores: ${escapeHtml(v.extinguishers?.status || 'N/A')} (${v.extinguishers?.qty || 0})</div>
+              </div>
+
+              <div class="bg-obsidian-950 border border-slate-800/80 rounded-xl p-3 space-y-1.5">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-orange-400">Pendientes y Recepción</div>
+                ${pendDetailHtml}
+                <div class="text-[11px] text-slate-400 pt-1 border-t border-slate-800">Recibió: <strong class="text-slate-200">${escapeHtml(v.reception?.name || 'N/A')}</strong> (${escapeHtml(v.reception?.role || '')}) ${v.reception?.signature ? '• Firmado' : ''}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // ==================== CUSTOMIZABLE REPORT ("TACHAR / INCLUIR") ====================
+    function populateReportSelector() {
+      const sel = document.getElementById('report-visit-selector');
+      if (visits.length === 0) {
+        sel.innerHTML = `<option value="">Sin visitas registradas</option>`;
+        return;
+      }
+      sel.innerHTML = visits.map(v => `<option value="${v.id}">${formatDate(v.date)} — ${escapeHtml(v.store)}</option>`).join('');
+      if (currentReportId && visits.some(v => v.id === currentReportId)) {
+        sel.value = currentReportId;
+      } else {
+        currentReportId = visits[0].id;
+        sel.value = currentReportId;
+      }
+    }
+
+    function loadReportVisit(id) {
+      currentReportId = id;
+      const v = visits.find(x => x.id === id);
+      if (!v) {
+        document.getElementById('report-print-sheet').innerHTML = `<div class="text-center py-12 text-slate-500">No hay visitas registradas para generar informe.</div>`;
+        document.getElementById('report-toggles-container').innerHTML = '';
+        return;
+      }
+
+      reportVisibility = {
+        execSummary: true,
+        lighting: (v.lighting || []).length > 0 || Boolean(v.lightingNotes),
+        lightingItems: Object.fromEntries((v.lighting || []).map(i => [i.id, true])),
+        caluga: v.caluga?.status !== 'Sin intervención / Operativa' || (v.caluga?.cinta || 0) > 0 || (v.caluga?.trafo || 0) > 0 || Boolean(v.caluga?.notes),
+        outlets: (v.outlets || []).length > 0 || Boolean(v.outletsNotes),
+        outletsItems: Object.fromEntries((v.outlets || []).map(i => [i.id, true])),
+        ventus: (v.ventus || []).length > 0,
+        ventusItems: Object.fromEntries((v.ventus || []).map(i => [i.id, true])),
+        extinguishers: v.extinguishers?.status !== 'No revisado en esta visita' && ((v.extinguishers?.qty || 0) > 0 || Boolean(v.extinguishers?.notes) || v.extinguishers?.status === 'Requiere cambio urgente (Vencido/Descargado)'),
+        pendings: (v.pendings || []).length > 0,
+        pendingItems: Object.fromEntries((v.pendings || []).map(i => [i.id, true])),
+        photos: (v.photos || []).length > 0,
+        photoItems: Object.fromEntries((v.photos || []).map(i => [i.id, true])),
+        reception: true
+      };
+
+      renderReportToggles(v);
+      renderReportSheet(v);
+    }
+
+    function toggleReportKey(key, subKey = null) {
+      if (subKey !== null) {
+        reportVisibility[key][subKey] = !reportVisibility[key][subKey];
+      } else {
+        reportVisibility[key] = !reportVisibility[key];
+      }
+      const v = visits.find(x => x.id === currentReportId);
+      if (v) renderReportSheet(v);
+    }
+
+    function renderReportToggles(v) {
+      const container = document.getElementById('report-toggles-container');
+
+      const buildSectionToggle = (key, label, childrenHtml = '') => `
+        <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 space-y-2">
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-xs font-semibold text-slate-200">${label}</span>
+            <input type="checkbox" ${reportVisibility[key] ? 'checked' : ''} onchange="toggleReportKey('${key}')" class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-cyan-500 focus:ring-0" />
+          </label>
+          ${childrenHtml ? `<div class="pl-3 border-l border-slate-800 space-y-1.5 pt-1">${childrenHtml}</div>` : ''}
+        </div>
+      `;
+
+      const lightingChildren = (v.lighting || []).map(i => `
+        <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
+          <span class="truncate pr-2">${i.qty} ${i.unit} — ${escapeHtml(i.name)}</span>
+          <input type="checkbox" ${reportVisibility.lightingItems[i.id] ? 'checked' : ''} onchange="toggleReportKey('lightingItems', '${i.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
+        </label>
+      `).join('');
+
+      const outletsChildren = (v.outlets || []).map(i => `
+        <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
+          <span class="truncate pr-2">${i.qty}x ${escapeHtml(i.name)} (${escapeHtml(i.mount)})</span>
+          <input type="checkbox" ${reportVisibility.outletsItems[i.id] ? 'checked' : ''} onchange="toggleReportKey('outletsItems', '${i.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
+        </label>
+      `).join('');
+
+      const ventusChildren = (v.ventus || []).map((m, idx) => `
+        <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
+          <span class="truncate pr-2">${escapeHtml(m.equipo || 'Máquina Ventus #' + (idx + 1))}</span>
+          <input type="checkbox" ${reportVisibility.ventusItems[m.id] ? 'checked' : ''} onchange="toggleReportKey('ventusItems', '${m.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
+        </label>
+      `).join('');
+
+      const pendingChildren = (v.pendings || []).map(p => `
+        <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
+          <span class="truncate pr-2">${escapeHtml(p.descripcion)}</span>
+          <input type="checkbox" ${reportVisibility.pendingItems[p.id] ? 'checked' : ''} onchange="toggleReportKey('pendingItems', '${p.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
+        </label>
+      `).join('');
+
+      const photoChildren = (v.photos || []).map((p, idx) => `
+        <label class="flex items-center justify-between text-[11px] text-slate-400 cursor-pointer">
+          <span class="truncate pr-2">Foto #${idx + 1} (${escapeHtml(p.tag)})</span>
+          <input type="checkbox" ${reportVisibility.photoItems[p.id] ? 'checked' : ''} onchange="toggleReportKey('photoItems', '${p.id}')" class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
+        </label>
+      `).join('');
+
+      container.innerHTML = [
+        buildSectionToggle('execSummary', 'Resumen Ejecutivo (Para Tienda / Zonal)'),
+        buildSectionToggle('lighting', 'Iluminación Interior', lightingChildren),
+        buildSectionToggle('caluga', 'Iluminación Exterior / Caluga'),
+        buildSectionToggle('outlets', 'Enchufes y Puntos Eléctricos', outletsChildren),
+        buildSectionToggle('ventus', 'Limpieza Máquinas Ventus', ventusChildren),
+        buildSectionToggle('extinguishers', 'Revisión de Extintores'),
+        buildSectionToggle('pendings', 'Detalles Pendientes', pendingChildren),
+        buildSectionToggle('photos', 'Evidencia Fotográfica', photoChildren),
+        buildSectionToggle('reception', 'Recepción Conforme y Firma')
+      ].join('');
+    }
+
+    function buildExecutiveSummarySentences(v) {
+      const sentences = [];
+      const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
+      if (activeLights.length > 0) {
+        const totalL = activeLights.reduce((s, i) => s + i.qty, 0);
+        sentences.push(`Se normalizó la iluminación interior mediante el recambio/instalación de ${totalL} luminaria(s)/insumo(s) LED.`);
+      }
+      if (reportVisibility.caluga && v.caluga?.status && v.caluga.status !== 'Sin intervención / Operativa') {
+        sentences.push(`En fachada/exterior, la caluga del local quedó en estado: "${v.caluga.status}".`);
+      }
+      const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
+      if (activeOutlets.length > 0) {
+        const totalO = activeOutlets.reduce((s, i) => s + i.qty, 0);
+        sentences.push(`Se repararon/reemplazaron ${totalO} punto(s) de enchufe para asegurar la continuidad eléctrica de los puestos.`);
+      }
+      const activeVentus = (v.ventus || []).filter(i => reportVisibility.ventus && reportVisibility.ventusItems[i.id]);
+      if (activeVentus.length > 0) {
+        sentences.push(`Se realizó limpieza técnica y revisión operativa a ${activeVentus.length} equipo(s) de frío Ventus.`);
+      }
+      if (reportVisibility.extinguishers && v.extinguishers?.status) {
+        sentences.push(`Control de seguridad: extintores verificados (${v.extinguishers.status}).`);
+      }
+      const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
+      if (activePendings.length > 0) {
+        sentences.push(`Quedan ${activePendings.length} observación(es) pendiente(s) programada(s) para seguimiento.`);
+      }
+      if (sentences.length === 0) {
+        sentences.push('Visita de inspección técnica realizada en el local según lo detallado en el presente informe.');
+      }
+      return sentences;
+    }
+
+    function renderReportSheet(v) {
+      const sheet = document.getElementById('report-print-sheet');
+      const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
+      const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
+      const activeVentus = (v.ventus || []).filter(i => reportVisibility.ventus && reportVisibility.ventusItems[i.id]);
+      const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
+      const activePhotos = (v.photos || []).filter(i => reportVisibility.photos && reportVisibility.photoItems[i.id]);
+
+      const execSentences = buildExecutiveSummarySentences(v);
+
+      const statusBadgeClass = v.status === 'Local 100% Operativo'
+        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+        : v.status === 'Operativo con Observaciones'
+          ? 'bg-amber-100 text-amber-800 border-amber-300'
+          : 'bg-rose-100 text-rose-800 border-rose-300';
+
+      sheet.innerHTML = `
+        <!-- Encabezado Formal -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-widest text-blue-700">Área de Mantención e Infraestructura — EDX</div>
+            <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">INFORME TÉCNICO DE VISITA</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Folio: ${escapeHtml(v.id.toUpperCase())}</p>
+          </div>
+          <div class="text-left sm:text-right space-y-1">
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold border ${statusBadgeClass}">${escapeHtml(v.status)}</span>
+            <div class="text-xs text-slate-600">Fecha: <strong>${formatDate(v.date)}</strong> ${v.savedAt ? `(${v.savedAt})` : ''}</div>
+            <div class="text-xs text-slate-600">Atención: <strong>${escapeHtml(v.type)}</strong></div>
+          </div>
+        </div>
+
+        <!-- Datos de Identificación -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-500 block">Sucursal / Local Atendido:</span>
+            <strong class="text-sm text-slate-900">${escapeHtml(v.store)}</strong>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Técnico Responsable:</span>
+            <strong class="text-sm text-slate-900">${escapeHtml(v.tech)}</strong>
+          </div>
+        </div>
+
+        <!-- Resumen Ejecutivo para Tienda / Zonales -->
+        ${reportVisibility.execSummary ? `
+          <div class="bg-blue-50/70 border-l-4 border-blue-600 p-4 rounded-r-xl space-y-1.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-900">Resumen Ejecutivo para Jefatura de Tienda / Zonal</h3>
+            <ul class="space-y-1 text-xs text-slate-800 list-disc pl-4">
+              ${execSentences.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        <!-- Iluminación Interior -->
+        ${reportVisibility.lighting ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">1. Iluminación Interior (Materiales Instalados)</h3>
+            ${activeLights.length > 0 ? `
+              <table class="w-full text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 text-left">
+                    <th class="p-2 border border-slate-300">Insumo / Luminaria</th>
+                    <th class="p-2 border border-slate-300 text-center w-24">Cantidad</th>
+                    <th class="p-2 border border-slate-300">Ubicación / Sector</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${activeLights.map(i => `
+                    <tr>
+                      <td class="p-2 border border-slate-300 font-medium">${escapeHtml(i.name)}</td>
+                      <td class="p-2 border border-slate-300 text-center font-bold">${i.qty} ${i.unit}</td>
+                      <td class="p-2 border border-slate-300 text-slate-600">${escapeHtml(i.location || 'General')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+            ${v.lightingNotes ? `<p class="text-xs text-slate-700 bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Observación:</strong> ${escapeHtml(v.lightingNotes)}</p>` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Caluga Exterior -->
+        ${reportVisibility.caluga ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">2. Iluminación Exterior / Caluga de Local</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs bg-slate-50 p-3 rounded border border-slate-200">
+              <div><span class="text-slate-500">Estado:</span> <strong>${escapeHtml(v.caluga?.status || '')}</strong></div>
+              <div><span class="text-slate-500">Cinta LED:</span> <strong>${v.caluga?.cinta || 0} mts</strong></div>
+              <div><span class="text-slate-500">Transformador:</span> <strong>${v.caluga?.trafo || 0} unid.</strong></div>
+            </div>
+            ${v.caluga?.notes ? `<p class="text-xs text-slate-700"><strong>Detalle:</strong> ${escapeHtml(v.caluga.notes)}</p>` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Enchufes y Puntos Eléctricos -->
+        ${reportVisibility.outlets ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">3. Enchufes y Puntos Eléctricos</h3>
+            ${activeOutlets.length > 0 ? `
+              <table class="w-full text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 text-left">
+                    <th class="p-2 border border-slate-300">Tipo de Enchufe</th>
+                    <th class="p-2 border border-slate-300">Montaje</th>
+                    <th class="p-2 border border-slate-300 text-center w-24">Cantidad</th>
+                    <th class="p-2 border border-slate-300">Ubicación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${activeOutlets.map(i => `
+                    <tr>
+                      <td class="p-2 border border-slate-300 font-medium">${escapeHtml(i.name)}</td>
+                      <td class="p-2 border border-slate-300">${escapeHtml(i.mount)}</td>
+                      <td class="p-2 border border-slate-300 text-center font-bold">${i.qty} unid.</td>
+                      <td class="p-2 border border-slate-300 text-slate-600">${escapeHtml(i.location || 'General')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+            ${v.outletsNotes ? `<p class="text-xs text-slate-700 bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle eléctrico:</strong> ${escapeHtml(v.outletsNotes)}</p>` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Máquinas Ventus -->
+        ${reportVisibility.ventus && activeVentus.length > 0 ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Limpieza y Mantención de Máquinas Ventus</h3>
+            <div class="space-y-2">
+              ${activeVentus.map((m, idx) => {
+                const tasks = [
+                  m.condensador ? 'Limpieza condensador' : null,
+                  m.drenaje ? 'Limpieza drenaje' : null,
+                  m.temperatura ? 'Temperatura verificada' : null,
+                  m.burletes ? 'Revisión burletes' : null
+                ].filter(Boolean).join(' • ');
+                return `
+                  <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200">
+                    <div class="font-bold text-slate-900">${idx + 1}. ${escapeHtml(m.equipo || 'Equipo Ventus')}</div>
+                    <div class="text-slate-600 mt-0.5">Tareas: ${tasks || 'Inspección general'}</div>
+                    ${m.notas ? `<div class="text-slate-700 mt-0.5">Obs: ${escapeHtml(m.notas)}</div>` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Extintores -->
+        ${reportVisibility.extinguishers ? `
+          <div class="space-y-1.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Control de Extintores</h3>
+            <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200 flex flex-wrap justify-between gap-2">
+              <span>Estado: <strong>${escapeHtml(v.extinguishers?.status || '')}</strong></span>
+              <span>Cantidad: <strong>${v.extinguishers?.qty || 0} unid.</strong></span>
+              ${v.extinguishers?.notes ? `<span class="w-full text-slate-700">Obs: ${escapeHtml(v.extinguishers.notes)}</span>` : ''}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Pendientes -->
+        ${reportVisibility.pendings && activePendings.length > 0 ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-orange-800 border-b border-orange-300 pb-1">6. Detalles Pendientes para Próxima Visita</h3>
+            <table class="w-full text-xs border-collapse">
+              <thead>
+                <tr class="bg-orange-50 text-orange-950 text-left">
+                  <th class="p-2 border border-orange-200">Trabajo / Detalle Pendiente</th>
+                  <th class="p-2 border border-orange-200">Material Requerido</th>
+                  <th class="p-2 border border-orange-200 w-24">Prioridad</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${activePendings.map(p => `
+                  <tr>
+                    <td class="p-2 border border-orange-200 font-medium">${escapeHtml(p.descripcion)}</td>
+                    <td class="p-2 border border-orange-200 text-slate-700">${escapeHtml(p.material || 'Por definir')}</td>
+                    <td class="p-2 border border-orange-200 font-bold">${escapeHtml(p.prioridad)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        <!-- Evidencia Fotográfica -->
+        ${reportVisibility.photos && activePhotos.length > 0 ? `
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">7. Registro Fotográfico</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              ${activePhotos.map(p => `
+                <div class="border border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                  <img src="${p.dataUrl}" alt="${escapeHtml(p.tag)}" class="w-full h-32 object-cover" />
+                  <div class="p-2 text-[11px]">
+                    <span class="font-bold text-slate-900">[${escapeHtml(p.tag)}]</span>
+                    <span class="text-slate-600">${escapeHtml(p.caption || '')}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Recepción Conforme y Firma -->
+        ${reportVisibility.reception ? `
+          <div class="pt-4 border-t-2 border-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+            <div class="text-xs space-y-1">
+              <div class="font-bold uppercase tracking-wider text-slate-800">Recepción Conforme en Local</div>
+              <div>Recibido por: <strong>${escapeHtml(v.reception?.name || 'No registrado')}</strong></div>
+              <div>Cargo: <strong>${escapeHtml(v.reception?.role || '')}</strong></div>
+              <div class="text-slate-600 italic">"${escapeHtml(v.reception?.notes || '')}"</div>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="w-full max-w-[240px] h-24 border-b border-slate-800 flex items-center justify-center">
+                ${v.reception?.signature ? `<img src="${v.reception.signature}" alt="Firma" class="max-h-20 object-contain" />` : `<span class="text-[11px] text-slate-400">Sin firma digital</span>`}
+              </div>
+              <span class="text-[11px] font-semibold text-slate-700 mt-1">Firma Recepción Local (${escapeHtml(v.reception?.role || 'Asesor Local')})</span>
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    // ==================== BUILD WHATSAPP MESSAGE (WITH SIGNATURE STATUS) ====================
+    function buildWhatsAppMessage(v) {
+      const lines = [
+        `*INFORME DE MANTENCIÓN EDX*`,
+        `*Local:* ${v.store}`,
+        `*Fecha:* ${formatDate(v.date)} ${v.savedAt ? '(' + v.savedAt + ')' : ''}`,
+        `*Tipo:* ${v.type}`,
+        `*Estado:* ${v.status}`,
+        ``
+      ];
+
+      if (reportVisibility.execSummary) {
+        lines.push(`*RESUMEN:*`);
+        buildExecutiveSummarySentences(v).forEach(s => lines.push(`• ${s}`));
+        lines.push(``);
+      }
+
+      const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
+      if (reportVisibility.lighting && (activeLights.length > 0 || v.lightingNotes)) {
+        lines.push(`*ILUMINACIÓN INTERIOR:*`);
+        activeLights.forEach(i => lines.push(`- ${i.qty} ${i.unit} ${i.name}${i.location ? ' (' + i.location + ')' : ''}`));
+        if (v.lightingNotes) lines.push(`Obs: ${v.lightingNotes}`);
+        lines.push(``);
+      }
+
+      if (reportVisibility.caluga) {
+        lines.push(`*CALUGA EXTERIOR:* ${v.caluga?.status || ''}`);
+        if (v.caluga?.cinta > 0) lines.push(`- Cinta LED: ${v.caluga.cinta} mts`);
+        if (v.caluga?.trafo > 0) lines.push(`- Transformador: ${v.caluga.trafo} unid.`);
+        if (v.caluga?.notes) lines.push(`Obs: ${v.caluga.notes}`);
+        lines.push(``);
+      }
+
+      const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
+      if (reportVisibility.outlets && (activeOutlets.length > 0 || v.outletsNotes)) {
+        lines.push(`*ENCHUFES / ELECTRICIDAD:*`);
+        activeOutlets.forEach(i => lines.push(`- ${i.qty} unid. ${i.name} [${i.mount}]${i.location ? ' (' + i.location + ')' : ''}`));
+        if (v.outletsNotes) lines.push(`Obs: ${v.outletsNotes}`);
+        lines.push(``);
+      }
+
+      const activeVentus = (v.ventus || []).filter(i => reportVisibility.ventus && reportVisibility.ventusItems[i.id]);
+      if (reportVisibility.ventus && activeVentus.length > 0) {
+        lines.push(`*MÁQUINAS VENTUS:*`);
+        activeVentus.forEach(m => lines.push(`- ${m.equipo || 'Equipo Ventus'}: ${m.notas || 'Limpieza y revisión OK'}`));
+        lines.push(``);
+      }
+
+      if (reportVisibility.extinguishers) {
+        lines.push(`*EXTINTORES:* ${v.extinguishers?.status || ''} (${v.extinguishers?.qty || 0} unid.)`);
+        if (v.extinguishers?.notes) lines.push(`Obs: ${v.extinguishers.notes}`);
+        lines.push(``);
+      }
+
+      const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
+      if (reportVisibility.pendings && activePendings.length > 0) {
+        lines.push(`*PENDIENTES PRÓXIMA VISITA:*`);
+        activePendings.forEach(p => lines.push(`- [${p.prioridad}] ${p.descripcion}${p.material ? ' (Req: ' + p.material + ')' : ''}`));
+        lines.push(``);
+      }
+
+      if (reportVisibility.reception) {
+        const firmaTexto = v.reception?.signature
+          ? `Firmado conforme en acta digital`
+          : `Sin firma digital registrada`;
+        lines.push(`*RECEPCIÓN EN LOCAL:*`);
+        lines.push(`Recibe: ${v.reception?.name || 'N/A'} (${v.reception?.role || 'Asesor Local'})`);
+        lines.push(`Firma: ${firmaTexto}`);
+        if (v.reception?.notes) lines.push(`Obs: ${v.reception.notes}`);
+      }
+
+      return lines.join('\n');
+    }
+
+    function sendDirectWhatsApp() {
+      const v = visits.find(x => x.id === currentReportId);
+      if (!v) return;
+      const text = buildWhatsAppMessage(v);
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+      showToast('Abriendo WhatsApp con el informe y firma...');
+    }
+
+    function copyWhatsAppReport() {
+      const v = visits.find(x => x.id === currentReportId);
+      if (!v) return;
+      const text = buildWhatsAppMessage(v);
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Informe copiado con datos de firma');
+      }).catch(() => {
+        showToast('No se pudo copiar automáticamente', 'error');
+      });
+    }
+
+    // ==================== DIRECT PDF DOWNLOAD ====================
+    function downloadDirectPDF() {
+      const v = visits.find(x => x.id === currentReportId);
+      if (!v) return;
+
+      const element = document.getElementById('report-print-sheet');
+      const btn = document.getElementById('btn-download-pdf');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generando PDF...`;
+      lucide.createIcons();
+
+      const safeStore = v.store.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `Informe_Mantencion_${safeStore}_${v.date}.pdf`;
+
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+      };
+
+      if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(element).save().then(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+          lucide.createIcons();
+          showToast(`PDF descargado: ${filename}`);
+        }).catch(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+          lucide.createIcons();
+          window.print();
+        });
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        lucide.createIcons();
+        window.print();
+      }
+    }
+
+    // ==================== BACKUP & RESTORE MODAL ====================
+    function openBackupModal() {
+      renderBackupModalStores();
+      document.getElementById('backup-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeBackupModal() {
+      document.getElementById('backup-modal').classList.add('hidden');
+    }
+
+    function renderBackupModalStores() {
+      document.getElementById('modal-stores-count').textContent = `${savedStores.length} local(es)`;
+      const list = document.getElementById('modal-stores-list');
+      if (savedStores.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-500 py-2">Aún no hay locales guardados. Se guardan solos al registrar una visita.</p>`;
+        return;
+      }
+      list.innerHTML = savedStores.map(s => `
+        <div class="flex items-center justify-between bg-obsidian-950 border border-slate-800 rounded-lg px-3 py-2 text-xs">
+          <span class="text-slate-200 font-medium">${escapeHtml(s)}</span>
+          <button type="button" onclick="deleteSavedStore('${escapeHtml(s).replace(/'/g, "\\'")}')" class="text-rose-400 hover:text-rose-300" title="Quitar sugerencia">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function exportFullBackup() {
+      const payload = {
+        app: 'MantencionPro EDX',
+        exportedAt: new Date().toISOString(),
+        stores: savedStores,
+        visits: visits
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Respaldo_MantencionPro_EDX_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Archivo de respaldo descargado');
+    }
+
+    function importFullBackup(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data.visits)) {
+            visits = data.visits;
+            persistVisits();
+          }
+          if (Array.isArray(data.stores)) {
+            savedStores = data.stores;
+            localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+            syncStoresUI();
+          }
+          renderBackupModalStores();
+          renderHistory();
+          showToast('Respaldo restaurado correctamente');
+        } catch (err) {
+          showToast('Archivo de respaldo inválido', 'error');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // ==================== HELPERS ====================
+    function formatDate(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
