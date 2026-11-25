@@ -36,6 +36,14 @@
       font-size: 16px !important;
     }
 
+    #report-print-sheet .pdf-block,
+    #report-print-sheet tr,
+    #report-print-sheet .photo-card,
+    #report-print-sheet .signature-box {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
     @media print {
       body * { visibility: hidden; }
       #report-print-sheet, #report-print-sheet * { visibility: visible; }
@@ -68,7 +76,7 @@
           <div class="flex items-center gap-2">
             <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white truncate">MantenciónPro <span class="text-cyan-400">EDX</span></h1>
             <span id="autosave-badge" class="hidden md:inline-flex text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Autoguardado activo
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Guardado permanente activo
             </span>
           </div>
           <p class="hidden sm:block text-xs text-slate-400">Área de Mantención EDX — Registro, Inventario y Reportes</p>
@@ -112,7 +120,7 @@
       <div class="flex items-center justify-between gap-2 bg-obsidian-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5">
         <div>
           <h2 id="form-mode-title" class="text-base sm:text-lg font-semibold text-white">Registro de Visita</h2>
-          <p class="text-xs text-slate-400">Escribe el local (se guarda solo) y registra lo realizado.</p>
+          <p class="text-xs text-slate-400">El local queda catalogado en tu barra deslizable y guardado para siempre.</p>
         </div>
         <button type="button" onclick="resetForm()" class="px-3 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 shrink-0">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
@@ -131,19 +139,37 @@
             </div>
             <div>
               <h3 class="font-semibold text-white text-sm sm:text-base">1. Datos del Local y Orden de Trabajo (OT)</h3>
-              <p class="text-xs text-slate-400">Correlativo automático editable</p>
+              <p class="text-xs text-slate-400">Catálogo de locales deslizable + correlativo automático editable</p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="sm:col-span-2">
-              <div class="flex items-center justify-between mb-1.5">
+            <div class="sm:col-span-2 space-y-2">
+              <div class="flex items-center justify-between">
                 <label class="block text-xs font-medium text-slate-300">Nombre o Código del Local *</label>
-                <span id="saved-stores-hint" class="text-[11px] text-cyan-400">0 locales</span>
+                <span id="saved-stores-hint" class="text-[11px] text-cyan-400 font-medium">0 locales catalogados</span>
               </div>
-              <input type="text" id="visit-store" list="stores-datalist" required placeholder="Ej: Local 104 - La Florida" class="w-full bg-obsidian-950 border-2 border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
+
+              <div class="flex gap-2">
+                <input type="text" id="visit-store" list="stores-datalist" required oninput="renderStoreCatalogBar()" placeholder="Ej: Local Easton / Metro Cal y Canto" class="flex-1 bg-obsidian-950 border-2 border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
+                <button type="button" onclick="catalogCurrentStoreManual()" class="px-3.5 py-2.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-semibold flex items-center gap-1.5 shrink-0" title="Catalogar este local ahora">
+                  <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+                  <span class="hidden sm:inline">Catalogar</span>
+                </button>
+              </div>
               <datalist id="stores-datalist"></datalist>
-              <div id="recent-stores-chips" class="flex flex-wrap gap-1.5 mt-2"></div>
+
+              <!-- Barra deslizable de locales catalogados -->
+              <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    Barra de Locales Catalogados (desliza →)
+                  </span>
+                  <input type="text" id="store-catalog-search" oninput="renderStoreCatalogBar()" placeholder="Buscar local..." class="w-32 sm:w-44 bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
+                </div>
+                <div id="store-catalog-slider" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
+              </div>
             </div>
 
             <div>
@@ -250,7 +276,7 @@
 
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1.5">Detalle de Caluga Exterior</label>
-            <input type="text" id="caluga-notes" placeholder="Ej: Cambio transformador 12V y cinta LED en caluga..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+            <input type="text" id="caluga-notes" placeholder="Ej: Limpieza y cambio de cinta LED en caluga..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
           </div>
         </div>
 
@@ -273,7 +299,7 @@
 
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1.5">Detalle Eléctrico / Tablero</label>
-            <input type="text" id="outlets-notes" placeholder="Ej: Cambio de enchufe doble en caja 1..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500" />
+            <input type="text" id="outlets-notes" placeholder="Ej: Cambio de enchufe triple volante en horno..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500" />
           </div>
         </div>
 
@@ -430,7 +456,7 @@
             <div class="space-y-3">
               <div>
                 <label class="block text-xs font-medium text-slate-300 mb-1.5">Nombre de Quien Recibe *</label>
-                <input type="text" id="rec-name" required placeholder="Ej: Camila Soto" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                <input type="text" id="rec-name" required placeholder="Ej: Nathalie Bavestrello" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
               </div>
 
               <div>
@@ -468,7 +494,7 @@
 
         <div class="bg-obsidian-900 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="text-xs text-slate-400">
-            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se actualiza tu <strong class="text-white">Inventario</strong> y se abre el <strong class="text-white">Informe</strong>.
+            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se cataloga el local y se abre el <strong class="text-white">Informe</strong>.
           </div>
           <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg">
             <i data-lucide="save" class="w-4 h-4"></i>
@@ -523,7 +549,16 @@
       </div>
 
       <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="flex flex-col md:flex-row gap-3">
+        <!-- Barra deslizable de locales en historial -->
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="store" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Filtrar deslizando por local catalogado:</span>
+          </div>
+          <div id="history-store-slider" class="flex items-center gap-2 overflow-x-auto pb-1.5"></div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-3 pt-1 border-t border-slate-800/80">
           <div class="relative flex-1">
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
             <input type="text" id="history-search" oninput="renderHistory()" placeholder="Buscar por OT, local, sifón, llave, extintor, hussmann o ventus..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
@@ -681,7 +716,7 @@
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2.5">
           <i data-lucide="database-backup" class="w-5 h-5 text-cyan-400"></i>
-          <h3 class="font-bold text-white text-base">Respaldo y Locales Guardados</h3>
+          <h3 class="font-bold text-white text-base">Respaldo Permanente y Locales</h3>
         </div>
         <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -690,7 +725,7 @@
 
       <div class="space-y-3">
         <p class="text-xs text-slate-300 leading-relaxed">
-          Tus visitas, fotos, firmas y locales se respaldan solos en este dispositivo. También puedes exportar o restaurar un archivo JSON.
+          Tus visitas, fotos, firmas y locales se guardan de forma permanente en este navegador. Descarga un respaldo <strong>.json</strong> antes de cambiar de equipo o navegador para restaurarlo cuando quieras.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button type="button" onclick="exportFullBackup()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2">
@@ -707,7 +742,7 @@
 
       <div class="space-y-2 border-t border-slate-800 pt-4">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-200">Locales Guardados</span>
+          <span class="text-xs font-semibold text-slate-200">Catálogo de Locales</span>
           <span id="modal-stores-count" class="text-[11px] text-cyan-400">0 locales</span>
         </div>
         <div id="modal-stores-list" class="max-h-48 overflow-y-auto space-y-1.5 pr-1"></div>
@@ -750,8 +785,9 @@
       'Otro Gasfitería'
     ];
 
-    const STORAGE_KEY = 'MantencionProEDX_Visits_v5';
-    const STORES_KEY = 'MantencionProEDX_Stores_v5';
+    // Claves permanentes para no perder datos al cambiar de versión de código
+    const STORAGE_KEY = 'MantencionProEDX_Visits_PERMANENT';
+    const STORES_KEY = 'MantencionProEDX_Stores_PERMANENT';
 
     let visits = [];
     let savedStores = [];
@@ -821,13 +857,13 @@
     function flashAutosave() {
       const badge = document.getElementById('autosave-badge');
       if (!badge) return;
-      badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span> Respaldado`;
+      badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span> Guardado en memoria`;
       setTimeout(() => {
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Autoguardado activo`;
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Guardado permanente activo`;
       }, 2000);
     }
 
-    // ==================== STORES ====================
+    // ==================== STORES CATALOG & SLIDER ====================
     function loadStores() {
       const raw = localStorage.getItem(STORES_KEY);
       savedStores = raw ? JSON.parse(raw) : [];
@@ -835,7 +871,7 @@
     }
 
     function registerStoreAuto(storeName) {
-      const clean = storeName.trim();
+      const clean = (storeName || '').trim();
       if (!clean) return;
       const existingIdx = savedStores.findIndex(s => s.toLowerCase() === clean.toLowerCase());
       if (existingIdx !== -1) savedStores.splice(existingIdx, 1);
@@ -845,34 +881,109 @@
       flashAutosave();
     }
 
+    function catalogCurrentStoreManual() {
+      const input = document.getElementById('visit-store');
+      const val = (input.value || '').trim();
+      if (!val) {
+        showToast('Escribe el nombre del local primero', 'error');
+        return;
+      }
+      registerStoreAuto(val);
+      showToast(`Local catalogado: ${val}`);
+    }
+
     function deleteSavedStore(storeName) {
       savedStores = savedStores.filter(s => s !== storeName);
       localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
       syncStoresUI();
       renderBackupModalStores();
-      showToast('Local eliminado');
+      showToast('Local quitado del catálogo');
     }
 
     function selectStoreChip(name) {
       document.getElementById('visit-store').value = name;
+      renderStoreCatalogBar();
+      showToast(`Local seleccionado: ${name}`);
+    }
+
+    function filterHistoryBySlider(storeName) {
+      const select = document.getElementById('history-store-filter');
+      select.value = storeName;
+      renderHistory();
+      renderHistoryStoreSlider();
+    }
+
+    function renderStoreCatalogBar() {
+      const slider = document.getElementById('store-catalog-slider');
+      if (!slider) return;
+      const searchQ = (document.getElementById('store-catalog-search')?.value || '').toLowerCase().trim();
+      const currentInputVal = (document.getElementById('visit-store')?.value || '').trim().toLowerCase();
+
+      const list = savedStores.filter(s => !searchQ || s.toLowerCase().includes(searchQ));
+
+      if (list.length === 0) {
+        slider.innerHTML = `<span class="text-xs text-slate-500 py-1">${searchQ ? 'No coincide ningún local catalogado.' : 'Aún no hay locales catalogados. Escribe uno arriba o guarda una visita.'}</span>`;
+        return;
+      }
+
+      slider.innerHTML = list.map(store => {
+        const count = visits.filter(v => v.store.toLowerCase() === store.toLowerCase()).length;
+        const isSelected = currentInputVal === store.toLowerCase();
+        return `
+          <button type="button" onclick="selectStoreChip('${escapeHtml(store).replace(/'/g, "\\'")}')" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-2 ${
+            isSelected
+              ? 'bg-cyan-600/25 border-cyan-400 text-cyan-200 shadow'
+              : 'bg-obsidian-900 hover:bg-obsidian-800 border-slate-700 text-slate-200'
+          }">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-cyan-400 shrink-0"></i>
+            <span>${escapeHtml(store)}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">${count}</span>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function renderHistoryStoreSlider() {
+      const slider = document.getElementById('history-store-slider');
+      if (!slider) return;
+      const currentFilter = document.getElementById('history-store-filter')?.value || 'ALL';
+
+      const allChip = `
+        <button type="button" onclick="filterHistoryBySlider('ALL')" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+          currentFilter === 'ALL'
+            ? 'bg-blue-600 border-blue-400 text-white shadow'
+            : 'bg-obsidian-950 hover:bg-obsidian-800 border-slate-700 text-slate-300'
+        }">
+          Todos (${visits.length})
+        </button>
+      `;
+
+      const storeChips = savedStores.map(store => {
+        const count = visits.filter(v => v.store.toLowerCase() === store.toLowerCase()).length;
+        const active = currentFilter.toLowerCase() === store.toLowerCase();
+        return `
+          <button type="button" onclick="filterHistoryBySlider('${escapeHtml(store).replace(/'/g, "\\'")}')" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${
+            active
+              ? 'bg-cyan-600 border-cyan-400 text-white shadow'
+              : 'bg-obsidian-950 hover:bg-obsidian-800 border-slate-700 text-slate-200'
+          }">
+            <span>${escapeHtml(store)}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded-full ${active ? 'bg-black/25 text-white' : 'bg-slate-800 text-slate-400'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+
+      slider.innerHTML = allChip + storeChips;
     }
 
     function syncStoresUI() {
       const datalist = document.getElementById('stores-datalist');
       datalist.innerHTML = savedStores.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
-      document.getElementById('saved-stores-hint').textContent = `${savedStores.length} local(es)`;
+      document.getElementById('saved-stores-hint').textContent = `${savedStores.length} local(es) catalogados`;
 
-      const chips = document.getElementById('recent-stores-chips');
-      if (savedStores.length > 0) {
-        chips.innerHTML = `<span class="text-[11px] text-slate-500 self-center mr-1">Recientes:</span>` +
-          savedStores.slice(0, 4).map(s => `
-            <button type="button" onclick="selectStoreChip('${escapeHtml(s).replace(/'/g, "\\'")}')" class="text-[11px] px-2.5 py-0.5 rounded-full bg-obsidian-950 hover:bg-blue-600/20 text-slate-300 hover:text-cyan-300 border border-slate-700">
-              ${escapeHtml(s)}
-            </button>
-          `).join('');
-      } else {
-        chips.innerHTML = '';
-      }
+      renderStoreCatalogBar();
+      renderHistoryStoreSlider();
 
       const filterSelect = document.getElementById('history-store-filter');
       if (filterSelect) {
@@ -945,7 +1056,7 @@
               <option value="Sobrepuesto" ${item.defaultMount === 'Sobrepuesto' ? 'selected' : ''}>Sobrepuesto</option>
               <option value="Volante" ${item.defaultMount === 'Volante' ? 'selected' : ''}>Volante</option>
             </select>
-            <input type="text" id="loc-${item.id}" placeholder="Sector (ej: Caja 1)" class="bg-obsidian-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500" />
+            <input type="text" id="loc-${item.id}" placeholder="Sector (ej: Horno / Caja 1)" class="bg-obsidian-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500" />
           </div>
         </div>
       `).join('');
@@ -1307,37 +1418,52 @@
 
     // ==================== VISITS CRUD ====================
     function loadVisits() {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      // Migración automática si existían datos en versiones anteriores
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        const legacy = localStorage.getItem('MantencionProEDX_Visits_v5') || localStorage.getItem('MantencionProEDX_Visits_v4');
+        if (legacy) {
+          raw = legacy;
+          localStorage.setItem(STORAGE_KEY, raw);
+        }
+      }
+
       if (raw) {
         visits = JSON.parse(raw);
+        // Asegurar que todos los locales de visitas previas estén catalogados
+        visits.forEach(v => {
+          if (v.store && !savedStores.some(s => s.toLowerCase() === v.store.toLowerCase())) {
+            savedStores.push(v.store);
+          }
+        });
+        localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+        syncStoresUI();
       } else {
         const today = new Date().toISOString().split('T')[0];
         const cleanDate = today.replace(/-/g, '');
         visits = [{
           id: 'edx_demo_1',
           ot: `OT-${cleanDate}-001`,
-          store: 'Local 104 - La Florida',
+          store: 'Local Easton',
           date: today,
           savedAt: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
           type: 'Mantención Preventiva',
           status: 'Operativo con Observaciones',
-          lighting: [
-            { id: 'panel_18_emb', name: 'Panel LED 18W Embutido', unit: 'unid.', qty: 4, location: 'Sala ventas' }
-          ],
-          lightingNotes: 'Iluminación interior repuesta.',
-          caluga: { status: 'Reparada y Encendida', cinta: 2, trafo: 1, notes: 'Cambio transformador y cinta LED.' },
-          outlets: [{ id: 'enchufe_doble', name: 'Enchufe Doble', qty: 2, mount: 'Empotrado', location: 'Caja 1' }],
+          lighting: [],
+          lightingNotes: '',
+          caluga: { status: 'Cambio parcial de iluminación', cinta: 1, trafo: 1, notes: 'Limpieza y cambio de cinta.' },
+          outlets: [{ id: 'enchufe_triple', name: 'Enchufe Triple', qty: 1, mount: 'Volante', location: 'Horno' }],
           outletsNotes: '',
-          plumbing: [{ id: 'pl1', tipo: 'Sifón', qty: 1, sector: 'Baño / Lavamanos', detalle: 'Cambio por filtración' }],
+          plumbing: [{ id: 'pl1', tipo: 'Sifón', qty: 1, sector: 'Lavamanos', detalle: 'Cambio por filtración' }],
           plumbingNotes: '',
           cold: [{ id: 'c1', brand: 'Ventus', equipo: 'Mural Lácteos', condensador: true, drenaje: true, temperatura: true, notas: 'Limpieza condensador OK' }],
-          extinguishers: { status: 'Cambiados / Recargados en visita', qty: 1, notes: 'Recambio extintor PQS 6kg' },
-          pendings: [{ id: 'p1', descripcion: 'Revisar luminaria sector cajas', prioridad: 'Media', material: '1x Panel 18W' }],
+          extinguishers: { status: 'Vigentes y con carga al día', qty: 0, notes: '' },
+          pendings: [],
           photos: [],
-          reception: { name: 'Camila Soto', role: 'Asesor Local', notes: 'Conforme.', signature: null }
+          reception: { name: 'Nathalie Bavestrello', role: 'Jefe(a) de Tienda', notes: 'Conforme con los trabajos realizados en tienda.', signature: null }
         }];
         persistVisits();
-        registerStoreAuto('Local 104 - La Florida');
+        registerStoreAuto('Local Easton');
       }
       updateHistoryBadge();
     }
@@ -1345,6 +1471,8 @@
     function persistVisits() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
       updateHistoryBadge();
+      renderStoreCatalogBar();
+      renderHistoryStoreSlider();
       flashAutosave();
     }
 
@@ -1456,6 +1584,7 @@
       renderColdList();
       renderPendingList();
       renderPhotosGrid();
+      renderStoreCatalogBar();
       clearSignature();
       updateCatalogBadges();
       if (notify) showToast('Formulario limpio');
@@ -1511,6 +1640,7 @@
       renderColdList();
       renderPendingList();
       renderPhotosGrid();
+      renderStoreCatalogBar();
 
       document.getElementById('ext-status').value = v.extinguishers?.status || 'Vigentes y con carga al día';
       document.getElementById('ext-qty').value = v.extinguishers?.qty || 0;
@@ -1548,6 +1678,7 @@
     }
 
     function renderHistory() {
+      renderHistoryStoreSlider();
       document.getElementById('kpi-visits').textContent = visits.length;
       document.getElementById('kpi-stores').textContent = savedStores.length;
       document.getElementById('kpi-lights').textContent = visits.reduce((acc, v) => acc + (v.lighting || []).reduce((s, i) => s + i.qty, 0), 0);
@@ -1558,7 +1689,7 @@
       const filter = document.getElementById('history-filter').value;
 
       const filtered = visits.filter(v => {
-        if (storeFilter !== 'ALL' && v.store !== storeFilter) return false;
+        if (storeFilter !== 'ALL' && v.store.toLowerCase() !== storeFilter.toLowerCase()) return false;
         if (filter === 'PENDING' && (!v.pendings || v.pendings.length === 0)) return false;
         if (filter === 'OPERATIONAL' && v.status !== 'Local 100% Operativo') return false;
         if (!q) return true;
@@ -1815,7 +1946,7 @@
       }).join('');
     }
 
-    // ==================== REPORT & WHATSAPP (REFLEJANDO TODO LO REALIZADO) ====================
+    // ==================== REPORT & WHATSAPP ====================
     function populateReportSelector() {
       const sel = document.getElementById('report-visit-selector');
       if (visits.length === 0) {
@@ -2097,7 +2228,7 @@
       const activePhotos = (v.photos || []).filter(i => reportVisibility.photos && reportVisibility.photoItems[i.id]);
 
       sheet.innerHTML = `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
+        <div class="pdf-block flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
           <div>
             <div class="text-xs font-bold uppercase tracking-widest text-blue-700">Área de Mantención — EDX</div>
             <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">INFORME TÉCNICO</h2>
@@ -2110,7 +2241,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+        <div class="pdf-block grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
           <div><span class="text-slate-500 block">Local:</span><strong class="text-sm text-slate-900">${escapeHtml(v.store)}</strong></div>
           <div><span class="text-slate-500 block">N° Orden de Trabajo:</span><strong class="text-sm text-blue-800">${escapeHtml(v.ot || 'S/N')}</strong></div>
           <div><span class="text-slate-500 block">Área Emitente:</span><strong class="text-sm text-slate-900">Área de Mantención EDX</strong></div>
@@ -2118,19 +2249,19 @@
 
         ${reportVisibility.lighting && (activeLights.length > 0 || v.lightingNotes) ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">1. Iluminación Interior</h3>
+            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">1. Iluminación Interior</h3>
             ${activeLights.length > 0 ? `
               <table class="w-full text-xs border-collapse">
                 <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Insumo</th><th class="p-2 border border-slate-300 text-center w-24">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
                 <tbody>${activeLights.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty} ${i.unit}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
               </table>
             ` : ''}
-            ${v.lightingNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.lightingNotes)}</div>` : ''}
+            ${v.lightingNotes ? `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.lightingNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.caluga ? `
-          <div class="space-y-1.5">
+          <div class="pdf-block space-y-1.5">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">2. Caluga Exterior</h3>
             <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200 space-y-1">
               <div class="flex flex-wrap gap-4">
@@ -2145,46 +2276,46 @@
 
         ${reportVisibility.outlets && (activeOutlets.length > 0 || v.outletsNotes) ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">3. Enchufes</h3>
+            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">3. Enchufes</h3>
             ${activeOutlets.length > 0 ? `
               <table class="w-full text-xs border-collapse">
                 <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Tipo</th><th class="p-2 border border-slate-300">Montaje</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
                 <tbody>${activeOutlets.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300">${escapeHtml(i.mount)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
               </table>
             ` : ''}
-            ${v.outletsNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.outletsNotes)}</div>` : ''}
+            ${v.outletsNotes ? `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.outletsNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.plumbing && (activePlumbing.length > 0 || v.plumbingNotes) ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Gasfitería Menor</h3>
+            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Gasfitería Menor</h3>
             ${activePlumbing.length > 0 ? `
               <table class="w-full text-xs border-collapse">
                 <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Elemento</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th><th class="p-2 border border-slate-300">Detalle</th></tr></thead>
                 <tbody>${activePlumbing.map(p => `<tr><td class="p-2 border border-slate-300 font-semibold">${escapeHtml(p.tipo)}</td><td class="p-2 border border-slate-300 text-center font-bold">${p.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(p.sector || 'General')}</td><td class="p-2 border border-slate-300">${escapeHtml(p.detalle || '-')}</td></tr>`).join('')}</tbody>
               </table>
             ` : ''}
-            ${v.plumbingNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.plumbingNotes)}</div>` : ''}
+            ${v.plumbingNotes ? `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.plumbingNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.cold && activeCold.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Máquinas Hussmann y/o Ventus</h3>
-            ${activeCold.map((m, idx) => `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>${idx + 1}. ${escapeHtml(m.brand || 'Equipo')} — ${escapeHtml(m.equipo || 'Sector')}</strong> — ${escapeHtml(m.notas || 'Mantención realizada')}</div>`).join('')}
+            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Máquinas Hussmann y/o Ventus</h3>
+            ${activeCold.map((m, idx) => `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>${idx + 1}. ${escapeHtml(m.brand || 'Equipo')} — ${escapeHtml(m.equipo || 'Sector')}</strong> — ${escapeHtml(m.notas || 'Mantención realizada')}</div>`).join('')}
           </div>
         ` : ''}
 
         ${reportVisibility.extinguishers ? `
-          <div class="space-y-1.5">
+          <div class="pdf-block space-y-1.5">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">6. Extintores</h3>
             <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200">Estado: <strong>${escapeHtml(v.extinguishers?.status || '')}</strong> (${v.extinguishers?.qty || 0} unid.) ${v.extinguishers?.notes ? '— <strong>Detalle:</strong> ' + escapeHtml(v.extinguishers.notes) : ''}</div>
           </div>
         ` : ''}
 
         ${reportVisibility.pendings && activePendings.length > 0 ? `
-          <div class="space-y-2">
+          <div class="pdf-block space-y-2">
             <h3 class="text-xs font-bold uppercase tracking-wider text-orange-800 border-b border-orange-300 pb-1">7. Pendientes</h3>
             <ul class="list-disc pl-5 text-xs space-y-1">
               ${activePendings.map(p => `<li><strong>[${escapeHtml(p.prioridad)}]</strong> ${escapeHtml(p.descripcion)} ${p.material ? `<em>(${escapeHtml(p.material)})</em>` : ''}</li>`).join('')}
@@ -2194,15 +2325,15 @@
 
         ${reportVisibility.photos && activePhotos.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">8. Fotos</h3>
+            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">8. Fotos</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              ${activePhotos.map(p => `<div class="border border-slate-300 rounded-lg overflow-hidden"><img src="${p.dataUrl}" class="w-full h-28 object-cover" /><div class="p-1.5 text-[11px]"><strong>[${escapeHtml(p.tag)}]</strong> ${escapeHtml(p.caption || '')}</div></div>`).join('')}
+              ${activePhotos.map(p => `<div class="photo-card border border-slate-300 rounded-lg overflow-hidden"><img src="${p.dataUrl}" class="w-full h-28 object-cover" /><div class="p-1.5 text-[11px]"><strong>[${escapeHtml(p.tag)}]</strong> ${escapeHtml(p.caption || '')}</div></div>`).join('')}
             </div>
           </div>
         ` : ''}
 
         ${reportVisibility.reception ? `
-          <div class="pt-4 border-t-2 border-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+          <div class="signature-box pt-4 border-t-2 border-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
             <div class="text-xs space-y-1">
               <div class="font-bold uppercase text-slate-800">Recepción Conforme</div>
               <div>Recibe: <strong>${escapeHtml(v.reception?.name || 'No registrado')}</strong></div>
@@ -2242,16 +2373,26 @@
       btn.disabled = true;
       btn.innerHTML = `Generando PDF...`;
 
+      element.querySelectorAll('table tr, .grid > div, .space-y-2 > div, .space-y-1.5 > div').forEach(el => {
+        el.classList.add('pdf-block');
+      });
+
       const safeOT = (v.ot || 'OT').replace(/[^a-zA-Z0-9_-]/g, '_');
       const safeStore = v.store.replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `${safeOT}_${safeStore}_${v.date}.pdf`;
 
       html2pdf().set({
-        margin: [10, 10, 10, 10],
+        margin: [12, 12, 12, 12],
         filename,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        image: { type: 'jpeg', quality: 0.96 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0,
+          windowWidth: 820
+        },
+        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
       }).from(element).save().then(() => {
         btn.disabled = false;
         btn.innerHTML = orig;
@@ -2280,7 +2421,7 @@
       document.getElementById('modal-stores-count').textContent = `${savedStores.length} local(es)`;
       const list = document.getElementById('modal-stores-list');
       list.innerHTML = savedStores.length === 0
-        ? `<p class="text-xs text-slate-500 py-2">Aún no hay locales guardados.</p>`
+        ? `<p class="text-xs text-slate-500 py-2">Aún no hay locales catalogados.</p>`
         : savedStores.map(s => `
           <div class="flex items-center justify-between bg-obsidian-950 border border-slate-800 rounded-lg px-3 py-2 text-xs">
             <span class="text-slate-200">${escapeHtml(s)}</span>
