@@ -120,7 +120,7 @@
       <div class="flex items-center justify-between gap-2 bg-obsidian-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5">
         <div>
           <h2 id="form-mode-title" class="text-base sm:text-lg font-semibold text-white">Registro de Visita</h2>
-          <p class="text-xs text-slate-400">El local queda catalogado en tu barra deslizable y guardado para siempre.</p>
+          <p class="text-xs text-slate-400">Si el local es nuevo, se cataloga solo al generar el reporte y luego puedes deslizar y buscar.</p>
         </div>
         <button type="button" onclick="resetForm()" class="px-3 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 shrink-0">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
@@ -139,7 +139,7 @@
             </div>
             <div>
               <h3 class="font-semibold text-white text-sm sm:text-base">1. Datos del Local y Orden de Trabajo (OT)</h3>
-              <p class="text-xs text-slate-400">Catálogo de locales deslizable + correlativo automático editable</p>
+              <p class="text-xs text-slate-400">Catalogación automática al guardar + barra deslizable de búsqueda</p>
             </div>
           </div>
 
@@ -150,13 +150,7 @@
                 <span id="saved-stores-hint" class="text-[11px] text-cyan-400 font-medium">0 locales catalogados</span>
               </div>
 
-              <div class="flex gap-2">
-                <input type="text" id="visit-store" list="stores-datalist" required oninput="renderStoreCatalogBar()" placeholder="Ej: Local Easton / Metro Cal y Canto" class="flex-1 bg-obsidian-950 border-2 border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
-                <button type="button" onclick="catalogCurrentStoreManual()" class="px-3.5 py-2.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-semibold flex items-center gap-1.5 shrink-0" title="Catalogar este local ahora">
-                  <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
-                  <span class="hidden sm:inline">Catalogar</span>
-                </button>
-              </div>
+              <input type="text" id="visit-store" list="stores-datalist" required oninput="renderStoreCatalogBar()" placeholder="Escribe el local (ej: Local Liston)... se cataloga solo al guardar" class="w-full bg-obsidian-950 border-2 border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
               <datalist id="stores-datalist"></datalist>
 
               <!-- Barra deslizable de locales catalogados -->
@@ -164,7 +158,7 @@
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
                     <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-cyan-400"></i>
-                    Barra de Locales Catalogados (desliza →)
+                    Locales catalogados (desliza y toca)
                   </span>
                   <input type="text" id="store-catalog-search" oninput="renderStoreCatalogBar()" placeholder="Buscar local..." class="w-32 sm:w-44 bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
                 </div>
@@ -456,7 +450,7 @@
             <div class="space-y-3">
               <div>
                 <label class="block text-xs font-medium text-slate-300 mb-1.5">Nombre de Quien Recibe *</label>
-                <input type="text" id="rec-name" required placeholder="Ej: Nathalie Bavestrello" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                <input type="text" id="rec-name" required placeholder="Ej: Luisa" class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
               </div>
 
               <div>
@@ -494,7 +488,7 @@
 
         <div class="bg-obsidian-900 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="text-xs text-slate-400">
-            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se cataloga el local y se abre el <strong class="text-white">Informe</strong>.
+            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se cataloga el local automáticamente y se abre el <strong class="text-white">Informe</strong>.
           </div>
           <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg">
             <i data-lucide="save" class="w-4 h-4"></i>
@@ -522,7 +516,7 @@
             <i data-lucide="store" class="w-5 h-5"></i>
           </div>
           <div>
-            <div class="text-xs text-slate-400">Locales</div>
+            <div class="text-xs text-slate-400">Locales Catalogados</div>
             <div id="kpi-stores" class="text-xl sm:text-2xl font-bold text-white">0</div>
           </div>
         </div>
@@ -553,7 +547,7 @@
         <div class="space-y-1.5">
           <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
             <i data-lucide="store" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span>Filtrar deslizando por local catalogado:</span>
+            <span>Desliza y toca un local para ver sus reportes:</span>
           </div>
           <div id="history-store-slider" class="flex items-center gap-2 overflow-x-auto pb-1.5"></div>
         </div>
@@ -725,7 +719,7 @@
 
       <div class="space-y-3">
         <p class="text-xs text-slate-300 leading-relaxed">
-          Tus visitas, fotos, firmas y locales se guardan de forma permanente en este navegador. Descarga un respaldo <strong>.json</strong> antes de cambiar de equipo o navegador para restaurarlo cuando quieras.
+          Tus visitas, fotos, firmas y locales se guardan en este navegador. Descarga un respaldo <strong>.json</strong> para guardar una copia externa o restaurarla cuando quieras.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button type="button" onclick="exportFullBackup()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2">
@@ -785,7 +779,6 @@
       'Otro Gasfitería'
     ];
 
-    // Claves permanentes para no perder datos al cambiar de versión de código
     const STORAGE_KEY = 'MantencionProEDX_Visits_PERMANENT';
     const STORES_KEY = 'MantencionProEDX_Stores_PERMANENT';
 
@@ -881,17 +874,6 @@
       flashAutosave();
     }
 
-    function catalogCurrentStoreManual() {
-      const input = document.getElementById('visit-store');
-      const val = (input.value || '').trim();
-      if (!val) {
-        showToast('Escribe el nombre del local primero', 'error');
-        return;
-      }
-      registerStoreAuto(val);
-      showToast(`Local catalogado: ${val}`);
-    }
-
     function deleteSavedStore(storeName) {
       savedStores = savedStores.filter(s => s !== storeName);
       localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
@@ -922,7 +904,7 @@
       const list = savedStores.filter(s => !searchQ || s.toLowerCase().includes(searchQ));
 
       if (list.length === 0) {
-        slider.innerHTML = `<span class="text-xs text-slate-500 py-1">${searchQ ? 'No coincide ningún local catalogado.' : 'Aún no hay locales catalogados. Escribe uno arriba o guarda una visita.'}</span>`;
+        slider.innerHTML = `<span class="text-xs text-slate-500 py-1">${searchQ ? 'No coincide ningún local catalogado.' : 'Escribe un local y guarda el reporte para catalogarlo automáticamente.'}</span>`;
         return;
       }
 
@@ -990,7 +972,8 @@
         const currentVal = filterSelect.value;
         filterSelect.innerHTML = `<option value="ALL">Todos los locales (${savedStores.length})</option>` +
           savedStores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-        filterSelect.value = savedStores.includes(currentVal) ? currentVal : 'ALL';
+        const matched = savedStores.find(s => s.toLowerCase() === currentVal.toLowerCase());
+        filterSelect.value = matched || 'ALL';
       }
     }
 
@@ -1262,7 +1245,7 @@
       if (!files.length) return;
       for (const file of files) {
         try {
-          const compressed = await compressImage(file, 900, 0.72);
+          const compressed = await compressImage(file, 800, 0.68);
           photoItems.push({
             id: 'ph_' + Date.now() + Math.random().toString(36).slice(2, 6),
             dataUrl: compressed,
@@ -1418,7 +1401,6 @@
 
     // ==================== VISITS CRUD ====================
     function loadVisits() {
-      // Migración automática si existían datos en versiones anteriores
       let raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
         const legacy = localStorage.getItem('MantencionProEDX_Visits_v5') || localStorage.getItem('MantencionProEDX_Visits_v4');
@@ -1430,7 +1412,6 @@
 
       if (raw) {
         visits = JSON.parse(raw);
-        // Asegurar que todos los locales de visitas previas estén catalogados
         visits.forEach(v => {
           if (v.store && !savedStores.some(s => s.toLowerCase() === v.store.toLowerCase())) {
             savedStores.push(v.store);
@@ -2370,8 +2351,26 @@
       const element = document.getElementById('report-print-sheet');
       const btn = document.getElementById('btn-download-pdf');
       const orig = btn.innerHTML;
+      let finished = false;
+
+      const restoreBtn = (msg, isErr = false) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(safetyTimer);
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        lucide.createIcons();
+        if (msg) showToast(msg, isErr ? 'error' : 'success');
+      };
+
       btn.disabled = true;
       btn.innerHTML = `Generando PDF...`;
+
+      // Seguro anti-cuelgue de 12 segundos en móviles
+      const safetyTimer = setTimeout(() => {
+        restoreBtn('Si no descargó el archivo, usa Imprimir / Guardar como PDF', true);
+        window.print();
+      }, 12000);
 
       element.querySelectorAll('table tr, .grid > div, .space-y-2 > div, .space-y-1.5 > div').forEach(el => {
         el.classList.add('pdf-block');
@@ -2381,27 +2380,29 @@
       const safeStore = v.store.replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `${safeOT}_${safeStore}_${v.date}.pdf`;
 
+      if (typeof html2pdf !== 'function') {
+        restoreBtn('Abriendo vista de impresión PDF...');
+        window.print();
+        return;
+      }
+
       html2pdf().set({
-        margin: [12, 12, 12, 12],
+        margin: [10, 10, 10, 10],
         filename,
-        image: { type: 'jpeg', quality: 0.96 },
+        image: { type: 'jpeg', quality: 0.88 },
         html2canvas: {
-          scale: 2,
+          scale: 1.5,
           useCORS: true,
+          logging: false,
           scrollY: 0,
-          windowWidth: 820
+          windowWidth: 794
         },
         jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).from(element).save().then(() => {
-        btn.disabled = false;
-        btn.innerHTML = orig;
-        lucide.createIcons();
-        showToast(`PDF descargado: ${filename}`);
+        restoreBtn(`PDF listo: ${filename}`);
       }).catch(() => {
-        btn.disabled = false;
-        btn.innerHTML = orig;
-        lucide.createIcons();
+        restoreBtn('Abriendo vista de impresión PDF...', true);
         window.print();
       });
     }
