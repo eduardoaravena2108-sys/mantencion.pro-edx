@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
   <title>MantenciónPro EDX — Registro Técnico, Inventario y Reportes</title>
-  <link rel="icon" href="data:," />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -124,7 +123,7 @@
       <div class="flex items-center justify-between gap-2 bg-obsidian-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5">
         <div>
           <h2 id="form-mode-title" class="text-base sm:text-lg font-semibold text-white">Registro de Visita</h2>
-          <p class="text-xs text-slate-400">Si el local es nuevo, se cataloga solo al generar el reporte y se respalda en Firebase.</p>
+          <p class="text-xs text-slate-400">Se guarda en el equipo y se sincroniza automáticamente en Firebase.</p>
         </div>
         <button type="button" onclick="resetForm()" class="px-3 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 shrink-0">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
@@ -412,25 +411,19 @@
           </div>
         </div>
 
-        <!-- 8B. Adicional / Comentarios Opcionales para Informe (WhatsApp y PDF) -->
-        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-            <div class="flex items-center gap-2.5">
-              <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
-                <i data-lucide="message-square-plus" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h3 class="font-semibold text-white text-sm sm:text-base">8B. Comentario / Adicional Opcional (Lo que falta o notas)</h3>
-                <p class="text-xs text-slate-400">Opcional: puedes activar o desactivar que salga en el mensaje de WhatsApp y en el PDF</p>
-              </div>
+        <!-- 8B. Comentarios Adicionales / Nota Extra Opcional -->
+        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+          <div class="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+            <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+              <i data-lucide="message-square-plus" class="w-5 h-5"></i>
             </div>
-            <label class="flex items-center gap-2 text-xs font-medium text-cyan-300 cursor-pointer bg-obsidian-950 border border-slate-700 px-3 py-1.5 rounded-xl">
-              <input type="checkbox" id="extra-comment-enabled" checked class="rounded bg-slate-800 border-slate-600 text-cyan-500" />
-              <span>Incluir en informe por defecto</span>
-            </label>
+            <div>
+              <h3 class="font-semibold text-white text-sm sm:text-base">Comentarios Adicionales / Nota Extra (Opcional)</h3>
+              <p class="text-xs text-slate-400">Puedes decidir si se muestra o no en WhatsApp y en el PDF desde la pestaña Informe</p>
+            </div>
           </div>
 
-          <textarea id="extra-comment-text" rows="3" placeholder="Ej: Falta coordinar corte de energía para cambiar breaker principal, o recordar traer 2 paneles 24W en la próxima pasada..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"></textarea>
+          <textarea id="extra-comments" rows="2" placeholder="Ej: Falta coordinar acceso de altura para caluga o comprar repuesto específico..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"></textarea>
         </div>
 
         <!-- 9. Evidencia Fotográfica -->
@@ -512,7 +505,7 @@
 
         <div class="bg-obsidian-900 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="text-xs text-slate-400">
-            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se cataloga el local, se respalda en <strong class="text-cyan-300">Firebase</strong> y se abre el <strong class="text-white">Informe</strong>.
+            Al guardar, se asigna el correlativo de <strong class="text-white">OT</strong>, se cataloga el local, se sincroniza en <strong class="text-cyan-300">Firebase</strong> y se abre el <strong class="text-white">Informe</strong>.
           </div>
           <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg">
             <i data-lucide="save" class="w-4 h-4"></i>
@@ -690,7 +683,7 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
               <i data-lucide="message-square-text" class="w-4 h-4"></i>
-              Vista Previa WhatsApp (Saludo automático + Lo que se hizo + Lo que falta / Adicional)
+              Vista Previa WhatsApp (Saludo automático + Lo que se hizo + Lo que falta)
             </span>
             <div class="flex items-center gap-1.5 bg-obsidian-950 p-1 rounded-xl border border-slate-800">
               <button type="button" id="mode-short-btn" onclick="setWhatsAppMode('short')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white">
@@ -742,8 +735,12 @@
 
       <div class="space-y-3">
         <p class="text-xs text-slate-300 leading-relaxed">
-          Tus datos se sincronizan con <strong>Firebase Firestore</strong> (proyecto <code>mantencionpro-edx</code>) y se mantienen en el navegador. También puedes exportar o importar un archivo <strong>.json</strong>.
+          Tus datos se sincronizan automáticamente con <strong>Firebase Firestore</strong> (<code>mantencionpro-edx</code>) y se mantienen en el equipo.
         </p>
+        <button type="button" onclick="forceCloudPushNow()" class="w-full px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow">
+          <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+          Sincronizar Todo Ahora con Firebase
+        </button>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button type="button" onclick="exportFullBackup()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2">
             <i data-lucide="download" class="w-4 h-4"></i>
@@ -795,6 +792,7 @@
 
     let db = null;
     let cloudReady = false;
+    let initialSyncDone = false;
 
     function setCloudBadge(state, text) {
       const badge = document.getElementById('cloud-badge');
@@ -812,48 +810,37 @@
     }
 
     function storeDocId(name) {
-      const clean = encodeURIComponent(String(name || '').trim().toLowerCase().replace(/\//g, '_'));
-      return clean || 'store_default';
+      return encodeURIComponent(String(name || '').trim().toLowerCase());
     }
 
     window.syncVisitToCloud = async function(visitObj) {
-      if (!cloudReady || !db || !visitObj?.id) return false;
+      if (!cloudReady || !db || !visitObj?.id) {
+        if (window.showToast) window.showToast('Guardado local listo; esperando conexión a Firebase', 'error');
+        return false;
+      }
       try {
-        // Si las fotos son muy pesadas, Firestore tiene límite de 1 MB por documento
-        const safeObj = JSON.parse(JSON.stringify(visitObj));
-        await setDoc(doc(db, 'visits', String(safeObj.id)), safeObj);
+        const cleanPayload = JSON.parse(JSON.stringify(visitObj));
+        await setDoc(doc(db, 'visits', cleanPayload.id), cleanPayload);
         setCloudBadge('ok', 'Firebase sincronizado');
         return true;
       } catch (err) {
         console.error('Error guardando visita en Firestore:', err);
-        // Reintentar sin fotos si excede tamaño de documento de Firestore
-        try {
-          const lightObj = JSON.parse(JSON.stringify(visitObj));
-          lightObj.photos = [];
-          await setDoc(doc(db, 'visits', String(lightObj.id)), lightObj);
-          setCloudBadge('ok', 'Firebase sincronizado (sin fotos pesadas)');
-          if (typeof showToast === 'function') {
-            showToast('Guardado en Firebase (fotos omitidas por tamaño de nube)');
-          }
-          return true;
-        } catch (err2) {
-          console.error('Error definitivo guardando visita en Firestore:', err2);
-          setCloudBadge('err', 'Firebase: error al guardar');
-          if (typeof showToast === 'function') {
-            showToast(`Error Firebase al guardar: ${err2.message || err2.code || 'revisa consola'}`, 'error');
-          }
-          return false;
-        }
+        setCloudBadge('err', 'Firebase: error al guardar');
+        if (window.showToast) window.showToast(`Error Firestore: ${err.message || err.code || 'revisar'}`, 'error');
+        return false;
       }
     };
 
     window.deleteVisitFromCloud = async function(id) {
-      if (!cloudReady || !db || !id) return;
+      if (!cloudReady || !db || !id) return false;
       try {
-        await deleteDoc(doc(db, 'visits', String(id)));
+        await deleteDoc(doc(db, 'visits', id));
         setCloudBadge('ok', 'Firebase sincronizado');
+        return true;
       } catch (err) {
         console.error('Error borrando visita en Firestore:', err);
+        setCloudBadge('err', 'Firebase: error al borrar');
+        return false;
       }
     };
 
@@ -875,29 +862,31 @@
     };
 
     window.deleteStoreFromCloud = async function(storeName) {
-      if (!cloudReady || !db || !storeName) return;
+      if (!cloudReady || !db || !storeName) return false;
       try {
         await deleteDoc(doc(db, 'stores', storeDocId(storeName)));
+        return true;
       } catch (err) {
         console.error('Error borrando local en Firestore:', err);
+        return false;
       }
     };
 
     window.syncAllLocalToCloud = async function(storesArr, visitsArr) {
       if (!cloudReady || !db) {
-        if (typeof showToast === 'function') showToast('Firebase aún no está listo', 'error');
-        return;
+        return { ok: 0, fail: 0 };
       }
-      let okCount = 0;
+      let ok = 0;
+      let fail = 0;
       for (const s of (storesArr || [])) {
-        if (await window.syncStoreToCloud(s)) okCount++;
+        const res = await window.syncStoreToCloud(s);
+        if (res) ok++; else fail++;
       }
       for (const v of (visitsArr || [])) {
-        if (await window.syncVisitToCloud(v)) okCount++;
+        const res = await window.syncVisitToCloud(v);
+        if (res) ok++; else fail++;
       }
-      if (typeof showToast === 'function') {
-        showToast(`Sincronización completa (${okCount} elemento(s) en Firebase)`);
-      }
+      return { ok, fail };
     };
 
     async function initFirebaseSync() {
@@ -905,7 +894,7 @@
         if (!cloudReady) {
           setCloudBadge('err', 'Firebase: tiempo agotado');
         }
-      }, 8000);
+      }, 9000);
 
       try {
         const app = initializeApp(firebaseConfig);
@@ -935,33 +924,49 @@
 
         if (cloudStores.length > 0 || cloudVisits.length > 0) {
           window.applyCloudData(cloudStores.map(x => x.name), cloudVisits);
-        } else {
-          await window.syncAllLocalToCloud(window.getLocalStores(), window.getLocalVisits());
         }
 
+        // Sube automáticamente cualquier dato local que aún no esté en la nube
+        const localStores = window.getLocalStores ? window.getLocalStores() : [];
+        const localVisits = window.getLocalVisits ? window.getLocalVisits() : [];
+        const cloudVisitIds = new Set(cloudVisits.map(v => v.id));
+        const cloudStoreNames = new Set(cloudStores.map(s => s.name.toLowerCase()));
+
+        const missingStores = localStores.filter(s => !cloudStoreNames.has(String(s).toLowerCase()));
+        const missingVisits = localVisits.filter(v => !cloudVisitIds.has(v.id));
+
+        if (missingStores.length > 0 || missingVisits.length > 0) {
+          await window.syncAllLocalToCloud(missingStores, missingVisits);
+        }
+
+        initialSyncDone = true;
+        setCloudBadge('ok', 'Firebase sincronizado');
+
         onSnapshot(collection(db, 'visits'), (snap) => {
+          if (!initialSyncDone) return;
           const liveVisits = [];
           snap.forEach(d => { if (d.data()?.id) liveVisits.push(d.data()); });
           liveVisits.sort((a, b) => String(b.id).localeCompare(String(a.id)));
-          if (liveVisits.length > 0) window.applyCloudData([], liveVisits);
-          setCloudBadge('ok', 'Firebase conectado');
+          window.replaceVisitsFromCloud(liveVisits);
+          setCloudBadge('ok', 'Firebase sincronizado');
         }, (err) => {
-          console.error('Error en snapshot visits:', err);
-          setCloudBadge('err', 'Firebase: error lectura visits');
+          console.error('Error en listener visits:', err);
+          setCloudBadge('err', 'Firebase: error lectura');
         });
 
         onSnapshot(collection(db, 'stores'), (snap) => {
+          if (!initialSyncDone) return;
           const liveStores = [];
           snap.forEach(d => { if (d.data()?.name) liveStores.push(d.data()); });
           liveStores.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-          if (liveStores.length > 0) window.applyCloudData(liveStores.map(x => x.name), []);
+          window.replaceStoresFromCloud(liveStores.map(x => x.name));
         }, (err) => {
-          console.error('Error en snapshot stores:', err);
+          console.error('Error en listener stores:', err);
         });
       } catch (err) {
         clearTimeout(watchdog);
         console.error('Error conectando a Firestore:', err);
-        setCloudBadge('err', 'Firebase: revisar Firestore/Reglas');
+        setCloudBadge('err', 'Firebase: revisar conexión');
       }
     }
 
@@ -1023,6 +1028,25 @@
     window.getLocalStores = () => savedStores;
     window.getLocalVisits = () => visits;
 
+    function refreshAllViewsAfterCloudChange() {
+      syncStoresUI();
+      updateHistoryBadge();
+      if (!document.getElementById('view-history').classList.contains('hidden')) {
+        renderHistory();
+      }
+      if (!document.getElementById('view-inventory').classList.contains('hidden')) {
+        renderInventoryView();
+      }
+      if (!document.getElementById('view-report').classList.contains('hidden')) {
+        populateReportSelector();
+        if (currentReportId && visits.some(v => v.id === currentReportId)) {
+          loadReportVisit(currentReportId);
+        } else if (visits.length > 0) {
+          loadReportVisit(visits[0].id);
+        }
+      }
+    }
+
     window.applyCloudData = function(cloudStores, cloudVisits) {
       if (Array.isArray(cloudStores) && cloudStores.length > 0) {
         const mergedStores = [...cloudStores];
@@ -1049,16 +1073,30 @@
         }
       });
       localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+      refreshAllViewsAfterCloudChange();
+    };
 
-      syncStoresUI();
-      updateHistoryBadge();
-      if (!document.getElementById('view-history').classList.contains('hidden')) {
-        renderHistory();
-      }
-      if (!document.getElementById('view-report').classList.contains('hidden')) {
-        populateReportSelector();
-        if (currentReportId) loadReportVisit(currentReportId);
-      }
+    window.replaceVisitsFromCloud = function(liveVisits) {
+      visits = (liveVisits || []).sort((a, b) => String(b.id).localeCompare(String(a.id)));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+      visits.forEach(v => {
+        if (v.store && !savedStores.some(s => s.toLowerCase() === v.store.toLowerCase())) {
+          savedStores.unshift(v.store);
+        }
+      });
+      localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+      refreshAllViewsAfterCloudChange();
+    };
+
+    window.replaceStoresFromCloud = function(liveStores) {
+      savedStores = liveStores || [];
+      visits.forEach(v => {
+        if (v.store && !savedStores.some(s => s.toLowerCase() === v.store.toLowerCase())) {
+          savedStores.unshift(v.store);
+        }
+      });
+      localStorage.setItem(STORES_KEY, JSON.stringify(savedStores));
+      refreshAllViewsAfterCloudChange();
     };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1102,13 +1140,14 @@
         ? 'bg-rose-950/95 border-rose-500/50 text-rose-100'
         : 'bg-obsidian-850/95 border-cyan-500/50 text-white';
       el.className = `pointer-events-auto border ${colors} px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2 transition-all`;
-      el.innerHTML = `<span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-rose-400' : 'bg-cyan-400'}"></span><span>${escapeHtml(msg)}</span>`;
+      el.innerHTML = `<span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-rose-400' : 'bg-cyan-400'}"></span><span>${msg}</span>`;
       container.appendChild(el);
       setTimeout(() => {
         el.classList.add('opacity-0');
         setTimeout(() => el.remove(), 300);
       }, 3200);
     }
+    window.showToast = showToast;
 
     function flashAutosave() {
       const badge = document.getElementById('autosave-badge');
@@ -1510,7 +1549,7 @@
       if (!files.length) return;
       for (const file of files) {
         try {
-          const compressed = await compressImage(file, 640, 0.55);
+          const compressed = await compressImage(file, 720, 0.62);
           photoItems.push({
             id: 'ph_' + Date.now() + Math.random().toString(36).slice(2, 6),
             dataUrl: compressed,
@@ -1705,8 +1744,7 @@
           cold: [{ id: 'c1', brand: 'Ventus', equipo: 'Mural Lácteos', condensador: true, drenaje: true, temperatura: true, notas: 'Limpieza condensador OK' }],
           extinguishers: { status: 'Vigentes y con carga al día', qty: 0, notes: '' },
           pendings: [],
-          extraComment: '',
-          extraCommentEnabled: true,
+          extraComments: '',
           photos: [],
           reception: { name: 'Nathalie Bavestrello', role: 'Jefe(a) de Tienda', notes: 'Conforme con los trabajos realizados en tienda.', signature: null }
         }];
@@ -1778,8 +1816,7 @@
           notes: document.getElementById('ext-notes').value.trim()
         },
         pendings: pendingItems.filter(p => p.descripcion.trim()),
-        extraComment: document.getElementById('extra-comment-text').value.trim(),
-        extraCommentEnabled: document.getElementById('extra-comment-enabled').checked,
+        extraComments: document.getElementById('extra-comments').value.trim(),
         photos: [...photoItems],
         reception: {
           name: document.getElementById('rec-name').value.trim(),
@@ -1792,10 +1829,10 @@
       if (editingId) {
         const idx = visits.findIndex(v => v.id === editingId);
         if (idx !== -1) visits[idx] = visitObj;
-        showToast('Visita actualizada');
+        showToast('Visita actualizada y enviada a Firebase');
       } else {
         visits.unshift(visitObj);
-        showToast(`Visita guardada (${otNumber})`);
+        showToast(`Visita ${otNumber} guardada y enviada a Firebase`);
       }
 
       persistVisits();
@@ -1818,8 +1855,7 @@
       document.getElementById('visit-date').value = today;
       document.getElementById('visit-ot').value = generateNextOT(today);
       document.getElementById('rec-notes').value = 'Conforme con los trabajos realizados en tienda.';
-      document.getElementById('extra-comment-text').value = '';
-      document.getElementById('extra-comment-enabled').checked = true;
+      document.getElementById('extra-comments').value = '';
 
       LIGHTING_CATALOG.forEach(item => {
         document.getElementById(`qty-${item.id}`).value = 0;
@@ -1892,8 +1928,7 @@
 
       coldItems = JSON.parse(JSON.stringify(v.cold || v.ventus || []));
       pendingItems = JSON.parse(JSON.stringify(v.pendings || []));
-      document.getElementById('extra-comment-text').value = v.extraComment || '';
-      document.getElementById('extra-comment-enabled').checked = v.extraCommentEnabled !== false;
+      document.getElementById('extra-comments').value = v.extraComments || '';
       photoItems = JSON.parse(JSON.stringify(v.photos || []));
       renderColdList();
       renderPendingList();
@@ -1941,7 +1976,7 @@
       document.getElementById('kpi-visits').textContent = visits.length;
       document.getElementById('kpi-stores').textContent = savedStores.length;
       document.getElementById('kpi-lights').textContent = visits.reduce((acc, v) => acc + (v.lighting || []).reduce((s, i) => s + i.qty, 0), 0);
-      document.getElementById('kpi-pendings').textContent = visits.filter(v => (v.pendings || []).length > 0 || Boolean(v.extraComment)).length;
+      document.getElementById('kpi-pendings').textContent = visits.filter(v => (v.pendings || []).length > 0).length;
 
       const q = (document.getElementById('history-search').value || '').toLowerCase().trim();
       const storeFilter = document.getElementById('history-store-filter').value;
@@ -1949,13 +1984,13 @@
 
       const filtered = visits.filter(v => {
         if (storeFilter !== 'ALL' && v.store.toLowerCase() !== storeFilter.toLowerCase()) return false;
-        if (filter === 'PENDING' && ((!v.pendings || v.pendings.length === 0) && !v.extraComment)) return false;
+        if (filter === 'PENDING' && (!v.pendings || v.pendings.length === 0) && !v.extraComments) return false;
         if (filter === 'OPERATIONAL' && v.status !== 'Local 100% Operativo') return false;
         if (!q) return true;
         const coldArr = v.cold || v.ventus || [];
         const blob = [
           v.ot, v.store, v.date, v.type, v.lightingNotes, v.outletsNotes, v.plumbingNotes, v.caluga?.status, v.caluga?.notes,
-          v.extinguishers?.status, v.extinguishers?.notes, v.reception?.name, v.reception?.role, v.extraComment || '',
+          v.extinguishers?.status, v.extinguishers?.notes, v.extraComments, v.reception?.name, v.reception?.role,
           ...(v.lighting || []).map(l => `${l.name} ${l.location}`),
           ...(v.outlets || []).map(o => `${o.name} ${o.mount} ${o.location}`),
           ...(v.plumbing || []).map(p => `${p.tipo} ${p.sector} ${p.detalle}`),
@@ -2039,9 +2074,9 @@
                 <div class="pt-1">Extintores: ${escapeHtml(v.extinguishers?.status || '')} (${v.extinguishers?.qty || 0}) ${v.extinguishers?.notes ? '— ' + escapeHtml(v.extinguishers.notes) : ''}</div>
               </div>
               <div class="bg-obsidian-950 border border-slate-800 rounded-xl p-3 space-y-1">
-                <div class="font-bold text-orange-400">Pendientes, Adicional y Recepción</div>
+                <div class="font-bold text-orange-400">Pendientes y Recepción</div>
                 ${(v.pendings || []).map(p => `<div class="text-orange-300">• [${escapeHtml(p.prioridad)}] ${escapeHtml(p.descripcion)}</div>`).join('') || '<div class="text-slate-500">Sin pendientes</div>'}
-                ${v.extraComment ? `<div class="text-cyan-300 pt-1">• Adicional: ${escapeHtml(v.extraComment)}</div>` : ''}
+                ${v.extraComments ? `<div class="text-cyan-300 pt-1">• Extra: ${escapeHtml(v.extraComments)}</div>` : ''}
                 <div class="text-slate-300 pt-1">Recibió: ${escapeHtml(v.reception?.name || 'N/A')} (${escapeHtml(v.reception?.role || '')})</div>
               </div>
             </div>
@@ -2249,7 +2284,7 @@
       const coldArr = v.cold || v.ventus || [];
       const activeCold = coldArr.filter(i => reportVisibility.cold && reportVisibility.coldItems[i.id]);
       const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
-      const showExtra = reportVisibility.extraComment && Boolean((v.extraComment || '').trim());
+      const hasExtra = Boolean(reportVisibility.extraComments && (v.extraComments || '').trim());
 
       const hechos = [];
       if (activeLights.length > 0 || (reportVisibility.lighting && v.lightingNotes)) {
@@ -2286,15 +2321,19 @@
         hechos.push(`🧯 Extintores: ${v.extinguishers.status}${v.extinguishers.qty > 0 ? ' (' + v.extinguishers.qty + ' unid.)' : ''}${v.extinguishers.notes ? ' — ' + v.extinguishers.notes : ''}`);
       }
 
-      const hasMissing = activePendings.length > 0 || showExtra;
       const otTag = v.ot ? ` | *${v.ot}*` : '';
-      const speech = hasMissing
+      const hasAnyMissing = activePendings.length > 0 || hasExtra;
+      const speech = hasAnyMissing
         ? `🛠️ ${greeting}, compartimos el resumen de mantención en 🏪 *${v.store}*${otTag} (${formatDate(v.date)}). Dejamos operativo lo indicado y quedó anotado lo pendiente para seguimiento.`
         : `🛠️ ${greeting}, compartimos el resumen de mantención en 🏪 *${v.store}*${otTag} (${formatDate(v.date)}). Todo lo revisado quedó operativo sin pendientes.`;
 
       const missingLines = [];
-      activePendings.forEach(p => missingLines.push(`• ${p.descripcion}${p.material ? ' (' + p.material + ')' : ''}`));
-      if (showExtra) missingLines.push(`• ${v.extraComment.trim()}`);
+      activePendings.forEach(p => {
+        missingLines.push(`• ${p.descripcion}${p.material ? ' (' + p.material + ')' : ''}`);
+      });
+      if (hasExtra) {
+        missingLines.push(`• ${v.extraComments.trim()}`);
+      }
 
       const lines = [
         speech,
@@ -2302,7 +2341,7 @@
         `✅ *Lo que se hizo:*`,
         ...(hechos.length > 0 ? hechos : [`• Revisión y mantención general en local.`]),
         ``,
-        hasMissing ? `⚠️ *Lo que falta / Adicional:*` : `✨ *Lo que falta:*`,
+        missingLines.length > 0 ? `⚠️ *Lo que falta:*` : `✨ *Lo que falta:*`,
         ...(missingLines.length > 0 ? missingLines : [`• Nada pendiente por ahora.`])
       ];
 
@@ -2357,8 +2396,8 @@
         lines.push(`⚠️ *Pendientes:*`);
         activePendings.forEach(p => lines.push(`- [${p.prioridad}] ${p.descripcion}`));
       }
-      if (reportVisibility.extraComment && (v.extraComment || '').trim()) {
-        lines.push(`📝 *Adicional / Lo que falta:* ${v.extraComment.trim()}`);
+      if (reportVisibility.extraComments && (v.extraComments || '').trim()) {
+        lines.push(`📝 *Comentarios adicionales / Lo que falta:* ${v.extraComments.trim()}`);
       }
       if (reportVisibility.reception) {
         lines.push(`📋 *Recepción:* ${v.reception?.name || 'N/A'} (${v.reception?.role || 'Asesor Local'}) ${v.reception?.signature ? '✍️ Firmado' : ''}`);
@@ -2392,7 +2431,7 @@
         extinguishers: v.extinguishers?.status !== 'No revisado en esta visita' && ((v.extinguishers?.qty || 0) > 0 || Boolean(v.extinguishers?.notes) || v.extinguishers?.status === 'Cambiados / Recargados en visita' || v.extinguishers?.status === 'Requiere cambio urgente (Vencido/Descargado)'),
         pendings: (v.pendings || []).length > 0,
         pendingItems: Object.fromEntries((v.pendings || []).map(i => [i.id, true])),
-        extraComment: Boolean((v.extraComment || '').trim()) && (v.extraCommentEnabled !== false),
+        extraComments: Boolean((v.extraComments || '').trim()),
         photos: (v.photos || []).length > 0,
         photoItems: Object.fromEntries((v.photos || []).map(i => [i.id, true])),
         reception: true
@@ -2479,10 +2518,10 @@
         buildSectionToggle('cold', 'Máquinas Hussmann / Ventus', coldChildren),
         buildSectionToggle('extinguishers', 'Extintores'),
         buildSectionToggle('pendings', 'Pendientes', pendingChildren),
-        (v.extraComment || '').trim() ? buildSectionToggle('extraComment', 'Adicional / Lo que falta (Opcional)') : '',
+        buildSectionToggle('extraComments', 'Comentarios Adicionales / Lo que falta (Opcional)'),
         buildSectionToggle('photos', 'Fotos', photoChildren),
         buildSectionToggle('reception', 'Recepción y Firma')
-      ].filter(Boolean).join('');
+      ].join('');
     }
 
     function renderReportSheet(v) {
@@ -2494,7 +2533,7 @@
       const coldArr = v.cold || v.ventus || [];
       const activeCold = coldArr.filter(i => reportVisibility.cold && reportVisibility.coldItems[i.id]);
       const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
-      const showExtra = reportVisibility.extraComment && Boolean((v.extraComment || '').trim());
+      const hasExtra = Boolean(reportVisibility.extraComments && (v.extraComments || '').trim());
       const activePhotos = (v.photos || []).filter(i => reportVisibility.photos && reportVisibility.photoItems[i.id]);
 
       sheet.innerHTML = `
@@ -2593,10 +2632,10 @@
           </div>
         ` : ''}
 
-        ${showExtra ? `
+        ${hasExtra ? `
           <div class="pdf-block space-y-1.5">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-900 border-b border-cyan-300 pb-1">7B. Adicional / Lo que Falta</h3>
-            <div class="text-xs bg-cyan-50/60 p-3 rounded border border-cyan-200 text-slate-800">${escapeHtml(v.extraComment.trim())}</div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-900 border-b border-cyan-300 pb-1">Comentarios Adicionales / Lo que Falta</h3>
+            <div class="text-xs bg-cyan-50/70 p-3 rounded border border-cyan-200 text-slate-800">${escapeHtml(v.extraComments.trim())}</div>
           </div>
         ` : ''}
 
@@ -2703,6 +2742,22 @@
     }
 
     // ==================== BACKUP MODAL ====================
+    async function forceCloudPushNow() {
+      if (!window.syncAllLocalToCloud) {
+        showToast('Módulo de Firebase no disponible', 'error');
+        return;
+      }
+      showToast('Sincronizando todo con Firebase...');
+      const res = await window.syncAllLocalToCloud(savedStores, visits);
+      if (res.fail === 0 && (res.ok > 0 || visits.length > 0)) {
+        showToast(`Sincronizado (${res.ok} elementos en Firebase)`);
+      } else if (res.fail > 0) {
+        showToast(`Hubo ${res.fail} error(es) al sincronizar`, 'error');
+      } else {
+        showToast('Todo ya está al día');
+      }
+    }
+
     function openBackupModal() {
       renderBackupModalStores();
       document.getElementById('backup-modal').classList.remove('hidden');
