@@ -753,7 +753,15 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import {
+      initializeFirestore,
+      collection,
+      doc,
+      setDoc,
+      deleteDoc,
+      getDocs,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAKoiOBtlKMG5eI6fdFPhPh2hK0p9rw7K0",
@@ -842,10 +850,18 @@
     };
 
     async function initFirebaseSync() {
+      const watchdog = setTimeout(() => {
+        if (!cloudReady) {
+          setCloudBadge('err', 'Firebase: tiempo agotado');
+        }
+      }, 8000);
+
       try {
         const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
+        db = initializeFirestore(app, { experimentalForceLongPolling: true });
         cloudReady = true;
+        clearTimeout(watchdog);
+        setCloudBadge('ok', 'Firebase conectado');
 
         const [storesSnap, visitsSnap] = await Promise.all([
           getDocs(collection(db, 'stores')),
@@ -886,16 +902,15 @@
           liveStores.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
           if (liveStores.length > 0) window.applyCloudData(liveStores.map(x => x.name), []);
         });
-
-        setCloudBadge('ok', 'Firebase conectado');
       } catch (err) {
+        clearTimeout(watchdog);
         console.error('Error conectando a Firestore:', err);
         setCloudBadge('err', 'Firebase: revisar Firestore/Reglas');
       }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(initFirebaseSync, 100);
+      initFirebaseSync();
     });
   </script>
 
