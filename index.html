@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -34,14 +34,6 @@
 
     input, select, textarea {
       font-size: 16px !important;
-    }
-
-    #report-print-sheet .pdf-block,
-    #report-print-sheet tr,
-    #report-print-sheet .photo-card,
-    #report-print-sheet .signature-box {
-      break-inside: avoid !important;
-      page-break-inside: avoid !important;
     }
 
     @media print {
@@ -426,7 +418,7 @@
           <textarea id="extra-comments" rows="2" placeholder="Ej: Falta coordinar acceso de altura para caluga o comprar repuesto específico..." class="w-full bg-obsidian-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"></textarea>
         </div>
 
-        <!-- 9. Evidencia Fotográfica -->
+        <!-- 9. Evidencia Fotográfica (Ilimitada + Proporción Real) -->
         <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div class="flex items-center gap-2.5">
@@ -434,8 +426,8 @@
                 <i data-lucide="camera" class="w-5 h-5"></i>
               </div>
               <div>
-                <h3 class="font-semibold text-white text-sm sm:text-base">9. Evidencia Fotográfica</h3>
-                <p class="text-xs text-slate-400">Antes / Después / Hallazgo (se incluyen en el PDF y respaldo)</p>
+                <h3 class="font-semibold text-white text-sm sm:text-base">9. Evidencia Fotográfica (10+ fotos con calce exacto)</h3>
+                <p class="text-xs text-slate-400" id="photos-counter-hint">0 fotos cargadas — Verticales y horizontales calzan sin deformarse en el PDF</p>
               </div>
             </div>
             <label class="cursor-pointer px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5">
@@ -447,7 +439,7 @@
 
           <div id="photos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
           <div id="photos-empty" class="text-center py-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-            No hay fotos adjuntas aún.
+            No hay fotos adjuntas aún. Puedes seleccionar 10 o más fotos de una vez o ir sumándolas.
           </div>
         </div>
 
@@ -813,6 +805,7 @@
       return encodeURIComponent(String(name || '').trim().toLowerCase());
     }
 
+    // Guarda visitas en Firestore; si hay 10-20 fotos y superan ~850KB, respalda metadata en Firestore sin fallar por límite 1MB
     window.syncVisitToCloud = async function(visitObj) {
       if (!cloudReady || !db || !visitObj?.id) {
         if (window.showToast) window.showToast('Guardado local listo; esperando conexión a Firebase', 'error');
@@ -820,8 +813,18 @@
       }
       try {
         const cleanPayload = JSON.parse(JSON.stringify(visitObj));
+        const rawSize = JSON.stringify(cleanPayload).length;
+
+        if (rawSize > 850000 && Array.isArray(cleanPayload.photos) && cleanPayload.photos.length > 0) {
+          cleanPayload.photosCloudOmitted = cleanPayload.photos.length;
+          cleanPayload.photos = [];
+        }
+
         await setDoc(doc(db, 'visits', cleanPayload.id), cleanPayload);
         setCloudBadge('ok', 'Firebase sincronizado');
+        if (cleanPayload.photosCloudOmitted && window.showToast) {
+          window.showToast(`Sincronizado en Firebase (${cleanPayload.photosCloudOmitted} fotos quedan listas en el PDF local)`);
+        }
         return true;
       } catch (err) {
         console.error('Error guardando visita en Firestore:', err);
@@ -926,7 +929,6 @@
           window.applyCloudData(cloudStores.map(x => x.name), cloudVisits);
         }
 
-        // Sube automáticamente cualquier dato local que aún no esté en la nube
         const localStores = window.getLocalStores ? window.getLocalStores() : [];
         const localVisits = window.getLocalVisits ? window.getLocalVisits() : [];
         const cloudVisitIds = new Set(cloudVisits.map(v => v.id));
@@ -1062,9 +1064,20 @@
       if (Array.isArray(cloudVisits) && cloudVisits.length > 0) {
         const mapById = new Map();
         visits.forEach(v => mapById.set(v.id, v));
-        cloudVisits.forEach(cv => mapById.set(cv.id, cv));
+        cloudVisits.forEach(cv => {
+          const localMatch = mapById.get(cv.id);
+          // Preservar fotos locales si en la nube se omitieron por peso > 850KB
+          if ((!cv.photos || cv.photos.length === 0) && localMatch?.photos?.length > 0) {
+            cv.photos = localMatch.photos;
+          }
+          mapById.set(cv.id, cv);
+        });
         visits = Array.from(mapById.values()).sort((a, b) => String(b.id).localeCompare(String(a.id)));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+        } catch (e) {
+          console.warn('Límite localStorage alcanzado al guardar fotos pesadas:', e);
+        }
       }
 
       visits.forEach(v => {
@@ -1077,8 +1090,21 @@
     };
 
     window.replaceVisitsFromCloud = function(liveVisits) {
-      visits = (liveVisits || []).sort((a, b) => String(b.id).localeCompare(String(a.id)));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+      const prevMap = new Map(visits.map(v => [v.id, v]));
+      visits = (liveVisits || []).map(lv => {
+        const prev = prevMap.get(lv.id);
+        if ((!lv.photos || lv.photos.length === 0) && prev?.photos?.length > 0) {
+          lv.photos = prev.photos;
+        }
+        return lv;
+      }).sort((a, b) => String(b.id).localeCompare(String(a.id)));
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+      } catch (e) {
+        console.warn('Límite localStorage alcanzado:', e);
+      }
+
       visits.forEach(v => {
         if (v.store && !savedStores.some(s => s.toLowerCase() === v.store.toLowerCase())) {
           savedStores.unshift(v.store);
@@ -1543,46 +1569,81 @@
       lucide.createIcons();
     }
 
-    // ==================== PHOTOS ====================
+    // ==================== PHOTOS (MULTI-UPLOAD + PROPORCIÓN EXACTA) ====================
     async function handlePhotoUpload(event) {
       const files = Array.from(event.target.files || []);
       if (!files.length) return;
+      const counterHint = document.getElementById('photos-counter-hint');
+      if (counterHint) counterHint.textContent = `Procesando ${files.length} foto(s)...`;
+
+      let added = 0;
       for (const file of files) {
         try {
-          const compressed = await compressImage(file, 720, 0.62);
+          const processed = await compressImageWithMeta(file, 900, 0.72);
           photoItems.push({
             id: 'ph_' + Date.now() + Math.random().toString(36).slice(2, 6),
-            dataUrl: compressed,
+            dataUrl: processed.dataUrl,
+            width: processed.width,
+            height: processed.height,
             tag: 'Después',
             caption: ''
           });
+          added++;
         } catch (err) {
-          showToast('Error al procesar foto', 'error');
+          showToast('Error al procesar una foto', 'error');
         }
       }
       event.target.value = '';
       renderPhotosGrid();
-      showToast(`${files.length} foto(s) agregada(s)`);
+      if (added > 0) showToast(`${added} foto(s) agregada(s) (${photoItems.length} en total)`);
     }
 
-    function compressImage(file, maxWidth, quality) {
+    function compressImageWithMeta(file, maxSide, quality) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
           img.onload = () => {
+            let w = img.width;
+            let h = img.height;
+
+            // Escalar según el lado mayor para respetar tanto fotos verticales como horizontales
+            if (w >= h && w > maxSide) {
+              h = Math.round((h * maxSide) / w);
+              w = maxSide;
+            } else if (h > w && h > maxSide) {
+              w = Math.round((w * maxSide) / h);
+              h = maxSide;
+            }
+
             const canvas = document.createElement('canvas');
-            let w = img.width, h = img.height;
-            if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
-            canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', quality));
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+
+            resolve({
+              dataUrl: canvas.toDataURL('image/jpeg', quality),
+              width: w,
+              height: h
+            });
           };
           img.onerror = reject;
           img.src = e.target.result;
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
+      });
+    }
+
+    function getImageDimensionsFromDataUrl(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.width || 800, height: img.height || 600 });
+        img.onerror = () => resolve({ width: 800, height: 600 });
+        img.src = dataUrl;
       });
     }
 
@@ -1599,11 +1660,17 @@
     function renderPhotosGrid() {
       const grid = document.getElementById('photos-grid');
       const empty = document.getElementById('photos-empty');
+      const counterHint = document.getElementById('photos-counter-hint');
       empty.classList.toggle('hidden', photoItems.length > 0);
-      grid.innerHTML = photoItems.map(p => `
+      if (counterHint) {
+        counterHint.textContent = `${photoItems.length} foto(s) cargada(s) — Verticales y horizontales calzan sin deformarse en el PDF`;
+      }
+
+      grid.innerHTML = photoItems.map((p, idx) => `
         <div class="bg-obsidian-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div class="relative h-40 bg-black">
-            <img src="${p.dataUrl}" alt="Evidencia" class="w-full h-full object-cover" />
+          <div class="relative h-44 bg-black flex items-center justify-center">
+            <img src="${p.dataUrl}" alt="Evidencia #${idx + 1}" class="max-w-full max-h-full object-contain" />
+            <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 text-[11px] font-semibold text-white">#${idx + 1}</span>
             <button type="button" onclick="removePhoto('${p.id}')" class="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-600/90 text-white shadow">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
@@ -1755,7 +1822,15 @@
     }
 
     function persistVisits() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+      } catch (e) {
+        // Si hay muchas fotos pesadas en varias visitas antiguas, conservar el historial sin fotos antiguas en localStorage
+        const slim = visits.map((v, idx) => idx === 0 ? v : { ...v, photos: [] });
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+        } catch (_) {}
+      }
       updateHistoryBadge();
       renderStoreCatalogBar();
       renderHistoryStoreSlider();
@@ -2018,6 +2093,7 @@
         const plumbCount = (v.plumbing || []).length;
         const coldArr = v.cold || v.ventus || [];
         const pendCount = (v.pendings || []).length;
+        const photoCount = (v.photos || []).length || v.photosCloudOmitted || 0;
 
         return `
           <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-4 space-y-3">
@@ -2034,6 +2110,7 @@
                   <span><strong class="text-slate-200">${outletCount}</strong> enchufes</span>
                   <span><strong class="text-slate-200">${plumbCount}</strong> gasfitería</span>
                   <span><strong class="text-slate-200">${coldArr.length}</strong> máq. frío</span>
+                  <span><strong class="text-emerald-300">${photoCount}</strong> fotos</span>
                   <span class="${pendCount > 0 ? 'text-orange-400 font-semibold' : ''}"><strong>${pendCount}</strong> pendientes</span>
                   <span>Recibe: <strong class="text-slate-200">${escapeHtml(v.reception?.name || 'N/A')}</strong></span>
                 </div>
@@ -2519,7 +2596,7 @@
         buildSectionToggle('extinguishers', 'Extintores'),
         buildSectionToggle('pendings', 'Pendientes', pendingChildren),
         buildSectionToggle('extraComments', 'Comentarios Adicionales / Lo que falta (Opcional)'),
-        buildSectionToggle('photos', 'Fotos', photoChildren),
+        buildSectionToggle('photos', `Fotos (${(v.photos || []).length})`, photoChildren),
         buildSectionToggle('reception', 'Recepción y Firma')
       ].join('');
     }
@@ -2537,7 +2614,7 @@
       const activePhotos = (v.photos || []).filter(i => reportVisibility.photos && reportVisibility.photoItems[i.id]);
 
       sheet.innerHTML = `
-        <div class="pdf-block flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
           <div>
             <div class="text-xs font-bold uppercase tracking-widest text-blue-700">Área de Mantención — EDX</div>
             <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">INFORME TÉCNICO</h2>
@@ -2550,7 +2627,7 @@
           </div>
         </div>
 
-        <div class="pdf-block grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
           <div><span class="text-slate-500 block">Local:</span><strong class="text-sm text-slate-900">${escapeHtml(v.store)}</strong></div>
           <div><span class="text-slate-500 block">N° Orden de Trabajo:</span><strong class="text-sm text-blue-800">${escapeHtml(v.ot || 'S/N')}</strong></div>
           <div><span class="text-slate-500 block">Área Emitente:</span><strong class="text-sm text-slate-900">Área de Mantención EDX</strong></div>
@@ -2558,19 +2635,19 @@
 
         ${reportVisibility.lighting && (activeLights.length > 0 || v.lightingNotes) ? `
           <div class="space-y-2">
-            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">1. Iluminación Interior</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">1. Iluminación Interior</h3>
             ${activeLights.length > 0 ? `
               <table class="w-full text-xs border-collapse">
                 <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Insumo</th><th class="p-2 border border-slate-300 text-center w-24">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
                 <tbody>${activeLights.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty} ${i.unit}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
               </table>
             ` : ''}
-            ${v.lightingNotes ? `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.lightingNotes)}</div>` : ''}
+            ${v.lightingNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.lightingNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.caluga ? `
-          <div class="pdf-block space-y-1.5">
+          <div class="space-y-1.5">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">2. Caluga Exterior</h3>
             <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200 space-y-1">
               <div class="flex flex-wrap gap-4">
@@ -2585,46 +2662,46 @@
 
         ${reportVisibility.outlets && (activeOutlets.length > 0 || v.outletsNotes) ? `
           <div class="space-y-2">
-            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">3. Enchufes</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">3. Enchufes</h3>
             ${activeOutlets.length > 0 ? `
               <table class="w-full text-xs border-collapse">
                 <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Tipo</th><th class="p-2 border border-slate-300">Montaje</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th></tr></thead>
                 <tbody>${activeOutlets.map(i => `<tr><td class="p-2 border border-slate-300">${escapeHtml(i.name)}</td><td class="p-2 border border-slate-300">${escapeHtml(i.mount)}</td><td class="p-2 border border-slate-300 text-center font-bold">${i.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(i.location || 'General')}</td></tr>`).join('')}</tbody>
               </table>
             ` : ''}
-            ${v.outletsNotes ? `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.outletsNotes)}</div>` : ''}
+            ${v.outletsNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.outletsNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.plumbing && (activePlumbing.length > 0 || v.plumbingNotes) ? `
           <div class="space-y-2">
-            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Gasfitería Menor</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">4. Gasfitería Menor</h3>
             ${activePlumbing.length > 0 ? `
               <table class="w-full text-xs border-collapse">
                 <thead><tr class="bg-slate-100 text-left"><th class="p-2 border border-slate-300">Elemento</th><th class="p-2 border border-slate-300 text-center w-20">Cant.</th><th class="p-2 border border-slate-300">Sector</th><th class="p-2 border border-slate-300">Detalle</th></tr></thead>
                 <tbody>${activePlumbing.map(p => `<tr><td class="p-2 border border-slate-300 font-semibold">${escapeHtml(p.tipo)}</td><td class="p-2 border border-slate-300 text-center font-bold">${p.qty}</td><td class="p-2 border border-slate-300">${escapeHtml(p.sector || 'General')}</td><td class="p-2 border border-slate-300">${escapeHtml(p.detalle || '-')}</td></tr>`).join('')}</tbody>
               </table>
             ` : ''}
-            ${v.plumbingNotes ? `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.plumbingNotes)}</div>` : ''}
+            ${v.plumbingNotes ? `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>Detalle:</strong> ${escapeHtml(v.plumbingNotes)}</div>` : ''}
           </div>
         ` : ''}
 
         ${reportVisibility.cold && activeCold.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Máquinas Hussmann y/o Ventus</h3>
-            ${activeCold.map((m, idx) => `<div class="pdf-block text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>${idx + 1}. ${escapeHtml(m.brand || 'Equipo')} — ${escapeHtml(m.equipo || 'Sector')}</strong> — ${escapeHtml(m.notas || 'Mantención realizada')}</div>`).join('')}
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">5. Máquinas Hussmann y/o Ventus</h3>
+            ${activeCold.map((m, idx) => `<div class="text-xs bg-slate-50 p-2.5 rounded border border-slate-200"><strong>${idx + 1}. ${escapeHtml(m.brand || 'Equipo')} — ${escapeHtml(m.equipo || 'Sector')}</strong> — ${escapeHtml(m.notas || 'Mantención realizada')}</div>`).join('')}
           </div>
         ` : ''}
 
         ${reportVisibility.extinguishers ? `
-          <div class="pdf-block space-y-1.5">
+          <div class="space-y-1.5">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">6. Extintores</h3>
             <div class="text-xs bg-slate-50 p-3 rounded border border-slate-200">Estado: <strong>${escapeHtml(v.extinguishers?.status || '')}</strong> (${v.extinguishers?.qty || 0} unid.) ${v.extinguishers?.notes ? '— <strong>Detalle:</strong> ' + escapeHtml(v.extinguishers.notes) : ''}</div>
           </div>
         ` : ''}
 
         ${reportVisibility.pendings && activePendings.length > 0 ? `
-          <div class="pdf-block space-y-2">
+          <div class="space-y-2">
             <h3 class="text-xs font-bold uppercase tracking-wider text-orange-800 border-b border-orange-300 pb-1">7. Pendientes</h3>
             <ul class="list-disc pl-5 text-xs space-y-1">
               ${activePendings.map(p => `<li><strong>[${escapeHtml(p.prioridad)}]</strong> ${escapeHtml(p.descripcion)} ${p.material ? `<em>(${escapeHtml(p.material)})</em>` : ''}</li>`).join('')}
@@ -2633,7 +2710,7 @@
         ` : ''}
 
         ${hasExtra ? `
-          <div class="pdf-block space-y-1.5">
+          <div class="space-y-1.5">
             <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-900 border-b border-cyan-300 pb-1">Comentarios Adicionales / Lo que Falta</h3>
             <div class="text-xs bg-cyan-50/70 p-3 rounded border border-cyan-200 text-slate-800">${escapeHtml(v.extraComments.trim())}</div>
           </div>
@@ -2641,15 +2718,24 @@
 
         ${reportVisibility.photos && activePhotos.length > 0 ? `
           <div class="space-y-2">
-            <h3 class="pdf-block text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">8. Fotos</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">8. Evidencia Fotográfica (${activePhotos.length} foto(s))</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              ${activePhotos.map(p => `<div class="photo-card border border-slate-300 rounded-lg overflow-hidden"><img src="${p.dataUrl}" class="w-full h-28 object-cover" /><div class="p-1.5 text-[11px]"><strong>[${escapeHtml(p.tag)}]</strong> ${escapeHtml(p.caption || '')}</div></div>`).join('')}
+              ${activePhotos.map((p, idx) => `
+                <div class="border border-slate-300 rounded-lg overflow-hidden bg-slate-100 flex flex-col">
+                  <div class="h-32 bg-slate-100 flex items-center justify-center p-1">
+                    <img src="${p.dataUrl}" class="max-w-full max-h-full object-contain" />
+                  </div>
+                  <div class="p-1.5 text-[11px] bg-white border-t border-slate-200">
+                    <strong>#${idx + 1} [${escapeHtml(p.tag)}]</strong> ${escapeHtml(p.caption || '')}
+                  </div>
+                </div>
+              `).join('')}
             </div>
           </div>
         ` : ''}
 
         ${reportVisibility.reception ? `
-          <div class="signature-box pt-4 border-t-2 border-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+          <div class="pt-4 border-t-2 border-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
             <div class="text-xs space-y-1">
               <div class="font-bold uppercase text-slate-800">Recepción Conforme</div>
               <div>Recibe: <strong>${escapeHtml(v.reception?.name || 'No registrado')}</strong></div>
@@ -2680,65 +2766,352 @@
       navigator.clipboard.writeText(text).then(() => showToast('Mensaje copiado')).catch(() => showToast('Error al copiar', 'error'));
     }
 
-    function downloadDirectPDF() {
+    // ==================== GENERACIÓN PDF NATIVA CON CALCE PROPORCIONAL EXACTO ====================
+    async function downloadDirectPDF() {
       const v = visits.find(x => x.id === currentReportId);
       if (!v) return;
-      const element = document.getElementById('report-print-sheet');
-      const btn = document.getElementById('btn-download-pdf');
-      const orig = btn.innerHTML;
-      let finished = false;
-
-      const restoreBtn = (msg, isErr = false) => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(safetyTimer);
-        btn.disabled = false;
-        btn.innerHTML = orig;
-        lucide.createIcons();
-        if (msg) showToast(msg, isErr ? 'error' : 'success');
-      };
-
-      btn.disabled = true;
-      btn.innerHTML = `Generando PDF...`;
-
-      const safetyTimer = setTimeout(() => {
-        restoreBtn('Si no descargó el archivo, usa Imprimir / Guardar como PDF', true);
-        window.print();
-      }, 12000);
-
-      element.querySelectorAll('table tr, .grid > div, .space-y-2 > div, .space-y-1.5 > div').forEach(el => {
-        el.classList.add('pdf-block');
-      });
-
-      const safeOT = (v.ot || 'OT').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const safeStore = v.store.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `${safeOT}_${safeStore}_${v.date}.pdf`;
-
-      if (typeof html2pdf !== 'function') {
-        restoreBtn('Abriendo vista de impresión PDF...');
+      if (!window.jspdf || !window.jspdf.jsPDF) {
         window.print();
         return;
       }
 
-      html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename,
-        image: { type: 'jpeg', quality: 0.88 },
-        html2canvas: {
-          scale: 1.5,
-          useCORS: true,
-          logging: false,
-          scrollY: 0,
-          windowWidth: 794
-        },
-        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(element).save().then(() => {
-        restoreBtn(`PDF listo: ${filename}`);
-      }).catch(() => {
-        restoreBtn('Abriendo vista de impresión PDF...', true);
+      const btn = document.getElementById('btn-download-pdf');
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `Generando PDF...`;
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' }); // 215.9mm x 279.4mm
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const margin = 14;
+        const contentW = pageW - margin * 2;
+        const bottomLimit = pageH - 16;
+        let y = 14;
+
+        const ensureSpace = (neededH) => {
+          if (y + neededH > bottomLimit) {
+            doc.addPage();
+            y = 16;
+          }
+        };
+
+        const drawSectionHeader = (title, accentRgb = [30, 41, 59]) => {
+          ensureSpace(12);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9.5);
+          doc.setTextColor(...accentRgb);
+          doc.text(title.toUpperCase(), margin, y);
+          y += 1.8;
+          doc.setDrawColor(203, 213, 225);
+          doc.setLineWidth(0.35);
+          doc.line(margin, y, margin + contentW, y);
+          y += 4.5;
+        };
+
+        const drawTable = (headers, colWidths, rows) => {
+          const rowPadY = 2.2;
+          const lineH = 4;
+
+          // Header
+          ensureSpace(8);
+          doc.setFillColor(241, 245, 249);
+          doc.setDrawColor(203, 213, 225);
+          doc.rect(margin, y, contentW, 6.5, 'FD');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(30, 41, 59);
+
+          let cx = margin;
+          headers.forEach((h, idx) => {
+            doc.text(String(h), cx + 2, y + 4.4);
+            if (idx > 0) doc.line(cx, y, cx, y + 6.5);
+            cx += colWidths[idx];
+          });
+          y += 6.5;
+
+          // Rows
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          rows.forEach(row => {
+            const wrappedCells = row.map((cell, idx) => doc.splitTextToSize(String(cell ?? ''), colWidths[idx] - 4));
+            const maxLines = Math.max(1, ...wrappedCells.map(w => w.length));
+            const rowH = maxLines * lineH + rowPadY * 2;
+
+            ensureSpace(rowH);
+            doc.setDrawColor(203, 213, 225);
+            doc.rect(margin, y, contentW, rowH);
+
+            let rx = margin;
+            wrappedCells.forEach((lines, idx) => {
+              if (idx > 0) doc.line(rx, y, rx, y + rowH);
+              doc.setTextColor(15, 23, 42);
+              doc.text(lines, rx + 2, y + rowPadY + 3.1);
+              rx += colWidths[idx];
+            });
+            y += rowH;
+          });
+          y += 4;
+        };
+
+        const drawNoteBox = (label, text, bgRgb = [248, 250, 252], borderRgb = [226, 232, 240]) => {
+          const fullText = `${label} ${text}`;
+          const lines = doc.splitTextToSize(fullText, contentW - 6);
+          const boxH = lines.length * 4 + 4.5;
+          ensureSpace(boxH + 2);
+          doc.setFillColor(...bgRgb);
+          doc.setDrawColor(...borderRgb);
+          doc.rect(margin, y, contentW, boxH, 'FD');
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.2);
+          doc.setTextColor(30, 41, 59);
+          doc.text(lines, margin + 3, y + 4.8);
+          y += boxH + 4;
+        };
+
+        // ENCABEZADO EJECUTIVO
+        doc.setFillColor(15, 23, 42);
+        doc.rect(margin, y, contentW, 22, 'F');
+        doc.setTextColor(56, 189, 248);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('ÁREA DE MANTENCIÓN — EDX', margin + 4, y + 6);
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.text('INFORME TÉCNICO DE VISITA', margin + 4, y + 13.5);
+
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${v.ot || 'S/N OT'}   •   Fecha: ${formatDate(v.date)}   •   ${v.type}`, margin + 4, y + 19);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text(v.status, margin + contentW - 4, y + 13.5, { align: 'right' });
+        y += 26;
+
+        // FICHA DEL LOCAL
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(203, 213, 225);
+        doc.rect(margin, y, contentW, 13, 'FD');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Local / Tienda:', margin + 3, y + 4.8);
+        doc.text('Orden de Trabajo:', margin + 82, y + 4.8);
+        doc.text('Área Emitente:', margin + 135, y + 4.8);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(15, 23, 42);
+        doc.text(String(v.store || ''), margin + 3, y + 10.2);
+        doc.setTextColor(29, 78, 216);
+        doc.text(String(v.ot || 'S/N'), margin + 82, y + 10.2);
+        doc.setTextColor(15, 23, 42);
+        doc.text('Mantención EDX', margin + 135, y + 10.2);
+        y += 18;
+
+        // 1. ILUMINACIÓN INTERIOR
+        const activeLights = (v.lighting || []).filter(i => reportVisibility.lighting && reportVisibility.lightingItems[i.id]);
+        if (reportVisibility.lighting && (activeLights.length > 0 || v.lightingNotes)) {
+          drawSectionHeader('1. Iluminación Interior');
+          if (activeLights.length > 0) {
+            drawTable(
+              ['Insumo', 'Cantidad', 'Sector'],
+              [95, 30, contentW - 125],
+              activeLights.map(i => [i.name, `${i.qty} ${i.unit}`, i.location || 'General'])
+            );
+          }
+          if (v.lightingNotes) drawNoteBox('Detalle:', v.lightingNotes);
+        }
+
+        // 2. CALUGA EXTERIOR
+        if (reportVisibility.caluga) {
+          drawSectionHeader('2. Caluga Exterior');
+          const calugaSummary = `Estado: ${v.caluga?.status || ''}  |  Cinta LED: ${v.caluga?.cinta || 0} mts  |  Transformador: ${v.caluga?.trafo || 0} unid.${v.caluga?.notes ? '  —  Detalle: ' + v.caluga.notes : ''}`;
+          drawNoteBox('', calugaSummary);
+        }
+
+        // 3. ENCHUFES
+        const activeOutlets = (v.outlets || []).filter(i => reportVisibility.outlets && reportVisibility.outletsItems[i.id]);
+        if (reportVisibility.outlets && (activeOutlets.length > 0 || v.outletsNotes)) {
+          drawSectionHeader('3. Enchufes y Puntos Eléctricos');
+          if (activeOutlets.length > 0) {
+            drawTable(
+              ['Tipo', 'Montaje', 'Cant.', 'Sector'],
+              [65, 38, 22, contentW - 125],
+              activeOutlets.map(i => [i.name, i.mount, String(i.qty), i.location || 'General'])
+            );
+          }
+          if (v.outletsNotes) drawNoteBox('Detalle:', v.outletsNotes);
+        }
+
+        // 4. GASFITERÍA MENOR
+        const activePlumbing = (v.plumbing || []).filter(i => reportVisibility.plumbing && reportVisibility.plumbingItems[i.id]);
+        if (reportVisibility.plumbing && (activePlumbing.length > 0 || v.plumbingNotes)) {
+          drawSectionHeader('4. Gasfitería Menor');
+          if (activePlumbing.length > 0) {
+            drawTable(
+              ['Elemento', 'Cant.', 'Sector', 'Detalle'],
+              [48, 18, 46, contentW - 112],
+              activePlumbing.map(p => [p.tipo, String(p.qty), p.sector || 'General', p.detalle || '-'])
+            );
+          }
+          if (v.plumbingNotes) drawNoteBox('Detalle:', v.plumbingNotes);
+        }
+
+        // 5. EQUIPOS DE FRÍO
+        const coldArr = v.cold || v.ventus || [];
+        const activeCold = coldArr.filter(i => reportVisibility.cold && reportVisibility.coldItems[i.id]);
+        if (reportVisibility.cold && activeCold.length > 0) {
+          drawSectionHeader('5. Máquinas Hussmann y/o Ventus');
+          drawTable(
+            ['Marca', 'Mueble / Ubicación', 'Observación'],
+            [42, 58, contentW - 100],
+            activeCold.map(m => [m.brand || 'Equipo', m.equipo || 'General', m.notas || 'Mantención realizada'])
+          );
+        }
+
+        // 6. EXTINTORES
+        if (reportVisibility.extinguishers) {
+          drawSectionHeader('6. Revisión de Extintores');
+          const extTxt = `Estado: ${v.extinguishers?.status || ''} (${v.extinguishers?.qty || 0} unid.)${v.extinguishers?.notes ? '  —  Detalle: ' + v.extinguishers.notes : ''}`;
+          drawNoteBox('', extTxt);
+        }
+
+        // 7. PENDIENTES
+        const activePendings = (v.pendings || []).filter(i => reportVisibility.pendings && reportVisibility.pendingItems[i.id]);
+        if (reportVisibility.pendings && activePendings.length > 0) {
+          drawSectionHeader('7. Pendientes / Seguimiento', [154, 52, 18]);
+          drawTable(
+            ['Prioridad', 'Descripción', 'Material Necesario'],
+            [26, 98, contentW - 124],
+            activePendings.map(p => [p.prioridad, p.descripcion, p.material || '-'])
+          );
+        }
+
+        // COMENTARIOS ADICIONALES
+        if (reportVisibility.extraComments && (v.extraComments || '').trim()) {
+          drawSectionHeader('Comentarios Adicionales / Lo que Falta', [14, 116, 144]);
+          drawNoteBox('', v.extraComments.trim(), [236, 254, 255], [165, 243, 252]);
+        }
+
+        // 8. EVIDENCIA FOTOGRÁFICA CON CALCE PROPORCIONAL EXACTO (SIN ESTIRAR NI RECORTAR)
+        const activePhotos = (v.photos || []).filter(i => reportVisibility.photos && reportVisibility.photoItems[i.id]);
+        if (reportVisibility.photos && activePhotos.length > 0) {
+          drawSectionHeader(`8. Evidencia Fotográfica (${activePhotos.length} foto(s))`);
+
+          const gapCols = 6;
+          const cellW = (contentW - gapCols) / 2; // ~90.95mm por columna
+          const cellImgH = 64;                    // Alto de caja de imagen
+          const captionH = 9;                     // Pie de foto
+          const totalCellH = cellImgH + captionH;
+          const gapRows = 5;
+
+          for (let i = 0; i < activePhotos.length; i++) {
+            const p = activePhotos[i];
+            const col = i % 2;
+            const cellX = margin + col * (cellW + gapCols);
+
+            if (col === 0) {
+              ensureSpace(totalCellH + 2);
+            }
+
+            // Marco limpio de la celda fotográfica
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.3);
+            doc.rect(cellX, y, cellW, totalCellH, 'FD');
+
+            // Obtener dimensiones reales de la foto (si viene de una visita antigua sin width/height, las mide al vuelo)
+            let imgW = p.width;
+            let imgH = p.height;
+            if (!imgW || !imgH) {
+              const dims = await getImageDimensionsFromDataUrl(p.dataUrl);
+              imgW = dims.width;
+              imgH = dims.height;
+            }
+
+            // Escala proporcional exacta (object-fit: contain) dentro de cellW x cellImgH
+            const pad = 1.5;
+            const maxW = cellW - pad * 2;
+            const maxH = cellImgH - pad * 2;
+            const ratio = Math.min(maxW / imgW, maxH / imgH);
+            const renderW = imgW * ratio;
+            const renderH = imgH * ratio;
+            const offsetX = cellX + (cellW - renderW) / 2;
+            const offsetY = y + (cellImgH - renderH) / 2;
+
+            doc.addImage(p.dataUrl, 'JPEG', offsetX, offsetY, renderW, renderH, undefined, 'FAST');
+
+            // Pie de foto
+            doc.setDrawColor(226, 232, 240);
+            doc.line(cellX, y + cellImgH, cellX + cellW, y + cellImgH);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(30, 41, 59);
+            const labelPrefix = `#${i + 1} [${p.tag}] `;
+            const capText = p.caption ? `${labelPrefix}${p.caption}` : labelPrefix.trim();
+            const capLines = doc.splitTextToSize(capText, cellW - 4).slice(0, 2);
+            doc.text(capLines, cellX + 2, y + cellImgH + 3.6);
+
+            if (col === 1 || i === activePhotos.length - 1) {
+              y += totalCellH + gapRows;
+            }
+          }
+        }
+
+        // RECEPCIÓN CONFORME Y FIRMA
+        if (reportVisibility.reception) {
+          ensureSpace(34);
+          y += 2;
+          doc.setDrawColor(148, 163, 184);
+          doc.setLineWidth(0.5);
+          doc.line(margin, y, margin + contentW, y);
+          y += 6;
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(15, 23, 42);
+          doc.text('RECEPCIÓN CONFORME EN LOCAL', margin, y);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
+          doc.text(`Recibe: ${v.reception?.name || 'No registrado'}`, margin, y + 5.5);
+          doc.text(`Cargo: ${v.reception?.role || 'Asesor Local'}`, margin, y + 10.5);
+          const obsLines = doc.splitTextToSize(`"${v.reception?.notes || ''}"`, 98);
+          doc.setTextColor(71, 85, 105);
+          doc.text(obsLines, margin, y + 15.5);
+
+          // Firma a la derecha
+          const sigBoxW = 65;
+          const sigBoxX = margin + contentW - sigBoxW;
+          if (v.reception?.signature) {
+            try {
+              doc.addImage(v.reception.signature, 'PNG', sigBoxX + 7, y - 1, 50, 18);
+            } catch (_) {}
+          }
+          doc.setDrawColor(30, 41, 59);
+          doc.line(sigBoxX, y + 19, sigBoxX + sigBoxW, y + 19);
+          doc.setFontSize(7.5);
+          doc.setTextColor(51, 65, 85);
+          doc.text(`Firma Recepción (${v.reception?.role || 'Asesor Local'})`, sigBoxX + sigBoxW / 2, y + 23, { align: 'center' });
+        }
+
+        const safeOT = (v.ot || 'OT').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const safeStore = v.store.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `${safeOT}_${safeStore}_${v.date}.pdf`;
+        doc.save(filename);
+        showToast(`PDF listo con calce exacto: ${filename}`);
+      } catch (err) {
+        console.error('Error generando PDF:', err);
+        showToast('Error al generar PDF, abriendo impresión', 'error');
         window.print();
-      });
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        lucide.createIcons();
+      }
     }
 
     // ==================== BACKUP MODAL ====================
