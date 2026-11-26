@@ -722,7 +722,7 @@
 
       <div class="space-y-3">
         <p class="text-xs text-slate-300 leading-relaxed">
-          Tus datos se sincronizan con <strong>Firebase Firestore</strong> (proyecto <code>mantenimientopro-edx</code>) y se mantienen en el navegador. También puedes exportar o importar un archivo <strong>.json</strong>.
+          Tus datos se sincronizan con <strong>Firebase Firestore</strong> (proyecto <code>mantencionpro-edx</code>) y se mantienen en el navegador. También puedes exportar o importar un archivo <strong>.json</strong>.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button type="button" onclick="exportFullBackup()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2">
@@ -753,7 +753,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAKoiOBtlKMG5eI6fdFPhPh2hK0p9rw7K0",
@@ -872,15 +872,30 @@
           await window.syncAllLocalToCloud(window.getLocalStores(), window.getLocalVisits());
         }
 
+        onSnapshot(collection(db, 'visits'), (snap) => {
+          const liveVisits = [];
+          snap.forEach(d => { if (d.data()?.id) liveVisits.push(d.data()); });
+          liveVisits.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+          if (liveVisits.length > 0) window.applyCloudData([], liveVisits);
+          setCloudBadge('ok', 'Firebase conectado');
+        });
+
+        onSnapshot(collection(db, 'stores'), (snap) => {
+          const liveStores = [];
+          snap.forEach(d => { if (d.data()?.name) liveStores.push(d.data()); });
+          liveStores.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+          if (liveStores.length > 0) window.applyCloudData(liveStores.map(x => x.name), []);
+        });
+
         setCloudBadge('ok', 'Firebase conectado');
       } catch (err) {
-        console.warn('Firestore no disponible aún o reglas pendientes:', err);
+        console.error('Error conectando a Firestore:', err);
         setCloudBadge('err', 'Firebase: revisar Firestore/Reglas');
       }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(initFirebaseSync, 150);
+      setTimeout(initFirebaseSync, 100);
     });
   </script>
 
